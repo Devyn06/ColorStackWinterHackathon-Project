@@ -1,0 +1,23 @@
+<ion-header [translucent]="true">
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="background-slideshow">
+    <div class="slide slide-1"></div>
+    <div class="slide slide-2"></div>
+    <div class="slide slide-3"></div>
+    <div class="slide slide-4"></div>
+    <div class="overlay"></div>
+  </div>
+
+  <ion-grid fixed>
+    <ion-row class="ion-justify-content-center">
+      <ion-col size="8" size-md="6">
+        <ion-button expand="block" routerLink="/login">Login</ion-button>
+      </ion-col>
+      <ion-col size="8" size-md="6">
+        <ion-button expand="block" fill="outline" routerLink="/signup">Sign Up</ion-button>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>
