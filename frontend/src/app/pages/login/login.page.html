@@ -1,0 +1,51 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+    <ion-back-button defaultHref="/"></ion-back-button>
+  </ion-buttons>
+    <ion-title>Login Page</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="medium">Login Page</ion-title>
+    </ion-toolbar>
+  </ion-header>
+  <h1>
+    Already have an account?
+  </h1>
+  <ion-list lines="full">
+    <ion-item>
+      <ion-input
+        label="Email"
+        label-placement="stacked"
+        type="email"
+        placeholder="rider@example.com"
+        [(ngModel)]="userEmail">
+      </ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label="Password"
+        label-placement="stacked"
+        type="password"
+        placeholder="••••••••"
+        [(ngModel)]="userPassword">
+        <ion-input-password-toggle slot="end"></ion-input-password-toggle>
+      </ion-input>
+    </ion-item>
+  </ion-list>
+      <ion-button expand="block" (click)="onLogin()" shape="round" class="ion-margin-top">
+        Login
+      </ion-button>
+      <div class="ion-texct-center ion-margin-top">
+        <ion-text color="medium">
+          Don't have an account?
+        </ion-text>
+        <ion-button fill="clear" size="small" (click)="goToSignUp()">
+          Sign up here
+        </ion-button>
+      </div>
+</ion-content>

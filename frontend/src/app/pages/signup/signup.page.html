@@ -1,0 +1,65 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+    <ion-back-button defaultHref="/"></ion-back-button>
+  </ion-buttons>
+    <ion-title>Join other Riders!</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-list lines="full">
+    <ion-item>
+      <ion-input
+        label='First Name'
+        type="text"
+        placeholder="First Name"
+        [(ngModel)]="firstName">
+      </ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label='Last Name'
+        type="text"
+        placeholder="Last Name"
+        [(ngModel)]="lastName">
+      </ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label='Email:'
+        type="email"
+        placeholder="Email"
+        [(ngModel)]="userEmail">
+      </ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label='Create Password:'
+        type="password"
+        placeholder="password"
+        [(ngModel)]="userPassword">
+        <ion-input-password-toggle slot="end"></ion-input-password-toggle>
+      </ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-input
+        label="Confirm Password"
+        type="password"
+        [(ngModel)]="confirmPassword"
+        placeholder="Repeat Password">
+      </ion-input>
+    </ion-item>
+  </ion-list>
+    <ion-button [disabled]="!userPassword || userPassword !== confirmPassword" expand="block" (click)="onSignup()" shape="round" class="ion-margin-top">
+        Sign up
+    </ion-button>
+      <div class="ion-texct-center ion-margin-top">
+        <ion-text color="medium">
+          Already have an account?
+        </ion-text>
+        <ion-button fill="clear" size="small" (click)="goLogin()">
+          Login here
+        </ion-button>
+      </div>
+</ion-content>
