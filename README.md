@@ -16,7 +16,7 @@ Android Studio: Latest version (for SDK management)
 2. Backend Setup (Spring Boot)
 cd backend
 ./gradlew clean build
-Note: The contextLoads test is currently @Disabled. Once you configure your local MySQL database in application.properties, you can re-enable it.
+Note: DELETE spring.autoconfigure.exclude line in applications.properties when database is added
 
 Kotlin Developers: If using VS Code, install the Kotlin extension by Mathias Fröhlich to fix syntax highlighting.
 
