@@ -1,0 +1,22 @@
+#map-container {
+  height: 100%;
+  width: 100%;
+  background-color: #c50d0d; // Placeholder until map loads
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+.bottom-container {
+  position: absolute;
+  bottom: 10px; // Distance from the very bottom of the screen
+  left: 0;
+  right: 0;
+  z-index: 10; // Ensures it stays ON TOP of the map
+}
+
+ion-card {
+  margin: 10px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}

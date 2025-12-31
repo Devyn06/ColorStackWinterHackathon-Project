@@ -1,0 +1,31 @@
+<ion-content [fullscreen]="true">
+  <div id="map-container"></div>
+
+  <div class="bottom-container">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Select Option:</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="12">
+              <ion-button expand="block" (click)="createGroup()" color="primary">
+                <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+                Create Group
+              </ion-button>
+            </ion-col>
+          </ion-row>
+          <ion-row>
+            <ion-col size="12">
+              <ion-button expand="block" (click)="joinGroup()" fill="outline">
+                <ion-icon name="people-outline" slot="start"></ion-icon>
+                Join Group
+              </ion-button>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>
