@@ -20,12 +20,16 @@ Note: DELETE spring.autoconfigure.exclude line in applications.properties when d
 
 Kotlin Developers: If using VS Code, install the Kotlin extension by Mathias Fröhlich to fix syntax highlighting.
 
-3. Frontend & Mobile Setup (Ionic/Capacitor)
+3. Frontend Setup & Installation
+This project uses a secure script to inject API keys. 
+ 3.1 **Create Secrets**: Create a `.env` file in the `frontend/` directory.
+3.2 **Add Keys**:
 
-cd frontend
-npm install
-ionic build
-npx cap sync android
+    MAPS_API_KEY=your_google_maps_key_here
+
+3.3 **Install**: `npm install`
+3.4 **Web Preview**: `npm start` (Runs the injector script + ng serve)
+3.5 **Mobile Build**: `npm run android` (Syncs native variables + opens Android Studio)
 
 4. Android Build
 Open the /android folder directly in Android Studio.
