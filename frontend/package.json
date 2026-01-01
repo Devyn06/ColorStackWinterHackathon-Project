@@ -5,8 +5,9 @@
   "homepage": "https://ionicframework.com/",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "start": "node set-env.js && ng serve",
+    "build": "node set-env.js && ng build",
+    "android": "node set-env.js && ng build && npx cap synx android && npx cap open android",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint"
@@ -27,6 +28,8 @@
     "@capacitor/android": "^8.0.0",
     "@capacitor/app": "8.0.0",
     "@capacitor/core": "8.0.0",
+    "@capacitor/geolocation": "^8.0.0",
+    "@capacitor/google-maps": "^8.0.0",
     "@capacitor/haptics": "8.0.0",
     "@capacitor/keyboard": "8.0.0",
     "@capacitor/status-bar": "8.0.0",
@@ -52,6 +55,7 @@
     "@types/jasmine": "~5.1.0",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
+    "dotenv": "^17.2.3",
     "eslint": "^9.16.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsdoc": "^48.2.1",
