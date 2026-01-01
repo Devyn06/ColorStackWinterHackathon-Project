@@ -4,6 +4,7 @@ Tech Stack: Kotlin 1.9, Java 21, Spring Boot 3.4.1, Angular 20/Ionic 8, Capacito
 🚀 Quick Start
 To get the project running locally, follow these steps in order.
 
+
 1. Prerequisites
 You must have these versions installed to avoid build failures:
 
@@ -13,16 +14,23 @@ Node: Version 22 (Verify with node -version)
 
 Android Studio: Latest version (for SDK management)
 
+
+2. Launch App on mobile
+ cd frontend
+ npm install 
+ npm run android 
+ **add MAPS_API_KEY to local_properties**
+
 2. Backend Setup (Spring Boot)
 cd backend
 ./gradlew clean build
 Note: DELETE spring.autoconfigure.exclude line in applications.properties when database is added
 
-Kotlin Developers: If using VS Code, install the Kotlin extension by Mathias Fröhlich to fix syntax highlighting.
+
 
 3. Frontend Setup & Installation
 This project uses a secure script to inject API keys. 
- 3.1 **Create Secrets**: Create a `.env` file in the `frontend/` directory.
+3.1 **Create Secrets**: Create a `.env` file in the `frontend/` directory.
 3.2 **Add Keys**:
 
     MAPS_API_KEY=your_google_maps_key_here
