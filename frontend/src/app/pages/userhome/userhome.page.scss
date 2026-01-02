@@ -1,22 +1,59 @@
 #map-container {
-  height: 100%;
-  width: 100%;
-  background-color: #c50d0d; // Placeholder until map loads
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 1;
-}
-.bottom-container {
-  position: absolute;
-  bottom: 10px; // Distance from the very bottom of the screen
-  left: 0;
-  right: 0;
-  z-index: 10; // Ensures it stays ON TOP of the map
+  width: 100%;
+  height: 100%;
+  z-index: 0; // Keeps the map behind UI elements
 }
 
-ion-card {
-  margin: 10px;
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+capacitor-google-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// 3. THE LOADING STATE
+// This shows while the map is initializing, then is removed by @if logic
+ion-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  --color: var(--ion-color-primary);
+}
+
+// 4. THE UI OVERLAY (The Cards/Buttons)
+.bottom-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;  
+  right: 0;
+  padding: 10px;
+  padding-bottom: 20px; // Extra space for gesture navigation bars
+  z-index: 10;
+  // This allows you to click the map "through" the empty spaces in this container
+  pointer-events: none;
+
+  ion-card {
+    // This restores clicking for the actual card and buttons
+    pointer-events: auto; 
+    margin: 0;
+    border-radius: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    background: var(--ion-card-background, rgba(255, 255, 255, 0.733)); // The card itself should be solid
+    
+    ion-card-title {
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    ion-button {
+      --border-radius: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+      height: 50px; // Larger touch targets for riders
+    }
+  }
 }

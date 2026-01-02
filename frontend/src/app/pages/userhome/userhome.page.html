@@ -1,5 +1,10 @@
 <ion-content [fullscreen]="true">
-  <div id="map-container"></div>
+  <div id="map-container">
+    @if (!mapReady){
+      <ion-spinner name="crescent"></ion-spinner>
+    }
+    <capacitor-google-map #mapElement></capacitor-google-map>
+  </div>
 
   <div class="bottom-container">
     <ion-card>
