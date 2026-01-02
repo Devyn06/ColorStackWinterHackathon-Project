@@ -4,7 +4,6 @@ Tech Stack: Kotlin 1.9, Java 21, Spring Boot 3.4.1, Angular 20/Ionic 8, Capacito
 🚀 Quick Start
 To get the project running locally, follow these steps in order.
 
-
 1. Prerequisites
 You must have these versions installed to avoid build failures:
 
@@ -16,10 +15,15 @@ Android Studio: Latest version (for SDK management)
 
 
 2. Launch App on mobile
- cd frontend
- npm install 
- npm run android 
- **add MAPS_API_KEY to local_properties**
+ 2.1 cd frontend
+ 2.2 create .env inside frontend folder
+ 2.3 copy .env.example variables -> .env and fill in appropiate keys **MUST BE .ENV FILE FOR SCRIPT TO WORK**
+ 2.4 npm install 
+ 2.5 npm run android **opens android sdk** 
+ 2.6 **add MAPS_API_KEY to android/local.properties**
+ 2.7 run app
+
+
 
 2. Backend Setup (Spring Boot)
 cd backend
@@ -36,7 +40,7 @@ This project uses a secure script to inject API keys.
     MAPS_API_KEY=your_google_maps_key_here
 
 3.3 **Install**: `npm install`
-3.4 **Web Preview**: `npm start` (Runs the injector script + ng serve)
+3.4 **Web Preview**: `npm start` (Runs the injector script + ng serve + creates environment files)
 3.5 **Mobile Build**: `npm run android` (Syncs native variables + opens Android Studio)
 
 4. Android Build

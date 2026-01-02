@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.kotlin.android'
+// loads local.properties manually
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
 android {
     kotlinOptions {
         jvmTarget = '21'
@@ -13,7 +20,7 @@ android {
         versionCode 1
         versionName "1.0"
         //allows androidmanifest to see apikey from localproperties
-        manifestPlaceholders = [MAPS_API_KEY: project.findProperty("MAPS_API_KEY") ?: ""]
+        manifestPlaceholders = [MAPS_API_KEY: localProperties.getProperty("MAPS_API_KEY") ?: ""]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -48,7 +55,7 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
-apply plugin: 'org.jetbrains.kotlin.android'
+
 
 try {
     def servicesJSON = file('google-services.json')
