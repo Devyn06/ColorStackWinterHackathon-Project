@@ -1,10 +1,11 @@
 <ion-content [fullscreen]="true">
-  <div id="map-container">
-    @if (!mapReady){
+  @if (!mapReady()) {
+    <div class="spinner-overlay">
       <ion-spinner name="crescent"></ion-spinner>
-    }
-    <capacitor-google-map #mapElement></capacitor-google-map>
-  </div>
+      <p>Locating safe zones...</p>
+    </div>
+  }
+  <app-map-display (mapReady)="onMapReady($event)"></app-map-display>
 
   <div class="bottom-container">
     <ion-card>
