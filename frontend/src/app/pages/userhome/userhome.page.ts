@@ -23,24 +23,35 @@ const mapKey = environment.mapsKey;
 })
 export class UserhomePage implements OnInit {
   mapReady = signal(false);
+  currentView = signal<'selection' | 'group' | 'create' | 'join'>('selection');
+  groupCode = signal('');
 
   //receieves signal from map component 
   onMapReady(isReady:boolean){
-    if (isReady){
-      this.mapReady.set(true);
-    }
+    this.mapReady.set(isReady);
   }
-
   constructor() {
     addIcons({ addCircleOutline, peopleOutline});
   }
   ngOnInit() {
   }
-
+  selectGroup(){
+    this.currentView.set('group');
+  }
   createGroup(){
-    //TO DO
+    //creates code for user
+    const code = Math.random().toString(36).substring(2,8).toUpperCase();
+    this.groupCode.set(code);
+    //changes users view
+    this.currentView.set('create');
+  }
+  goBack(){
+    this.currentView.set('selection');
   }
   joinGroup(){
     //TO DO
+  }
+  startSession(){
+    //to DO
   }
 }

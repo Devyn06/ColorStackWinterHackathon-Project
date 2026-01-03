@@ -46,13 +46,15 @@ ion-spinner {
     margin: 0;
     border-radius: 30px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    background: var(--ion-card-background, rgba(255, 255, 255, 0.733)); // The card itself should be solid
+    background: var(--ion-card-background, rgb(255, 255, 255)); // The card itself should be solid
     
     ion-card-title {
       font-weight: 700;
       font-size: 1.2rem;
     }
-
+    ion-row{
+      
+    }
     ion-button {
       --border-radius: 12px;
       font-weight: 600;

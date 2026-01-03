@@ -9,6 +9,34 @@
 
   <div class="bottom-container">
     <ion-card>
+      
+      @if (currentView() == 'selection'){
+      <ion-card-header>
+        <ion-card-title>Select Option:</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="12">
+              <ion-button expand="block" (click)="startSession()" color="primary">
+                <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+                Single Rider
+              </ion-button>
+            </ion-col>
+          </ion-row>
+          <ion-row>
+            <ion-col size="12">
+              <ion-button expand="block" (click)="selectGroup()" fill="outline">
+                <ion-icon name="people-outline" slot="start"></ion-icon>
+                Group Ride
+              </ion-button>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+      }
+
+      @if (currentView() == 'group'){
       <ion-card-header>
         <ion-card-title>Select Option:</ion-card-title>
       </ion-card-header>
@@ -32,6 +60,19 @@
           </ion-row>
         </ion-grid>
       </ion-card-content>
+      }
+      @if (currentView() == 'create'){
+      <ion-card-header>
+        <ion-card-title>Group Code:</ion-card-title>
+        <ion-grid>
+          <ion-row>
+            {{groupCode()}}
+          </ion-row>
+        </ion-grid>
+      </ion-card-header>
+      <ion-card-content>
+      </ion-card-content>
+      }
     </ion-card>
   </div>
 </ion-content>

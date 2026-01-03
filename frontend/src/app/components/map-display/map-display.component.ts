@@ -62,14 +62,12 @@ export class MapDisplayComponent  implements OnInit {
         await this.newMap.enableCurrentLocation(true);
         // toggles loading spinner
         this.mapReady.emit(true);
-        console.log("emiitted true");
       } catch (err:any){
           console.error("Map initilization failed:",err);
           const errMsg = err?.message || 'Failed to load map. Please allow location services.';
           //calls function to show user a toast message with error that was caught 
           await this.showErrorToast(errMsg);
           this.mapReady.emit(false);
-          console.log("emiitted false");
       }
     }
     async ngOnDestroy(){
