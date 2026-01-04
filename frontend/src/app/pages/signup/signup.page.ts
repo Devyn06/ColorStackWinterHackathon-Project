@@ -27,7 +27,10 @@ export class SignupPage implements OnInit {
     console.log(this.userPassword);
     console.log(this.firstName);
     console.log(this.lastName);
+    //routes to userhomepage
+    this.router.navigate(['/userhome']);
   }
+  
   goLogin(){
     this.router.navigate(['/login']);
   }

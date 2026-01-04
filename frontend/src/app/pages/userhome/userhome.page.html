@@ -1,20 +1,28 @@
 <ion-content [fullscreen]="true">
+  <!-- shows loading screen until map is ready -->
   @if (!mapReady()) {
     <div class="spinner-overlay">
       <ion-spinner name="crescent"></ion-spinner>
-      <p>Locating safe zones...</p>
     </div>
   }
-  <app-map-display (mapReady)="onMapReady($event)"></app-map-display>
+  <!-- displays Map component and sends signal to remove loading screen -->
+   <!-- mapReady and pinDropped is called to connect map component and user functions -->
+  <app-map-display 
+    #mapComp 
+    (mapReady)="onMapReady($event)"
+    (pinDropped)="onPinDropped($event)"> 
+  </app-map-display>
 
   <div class="bottom-container">
     <ion-card>
-      
+      <!-- first card options single rider or group -->
       @if (currentView() == 'selection'){
       <ion-card-header>
+        
         <ion-card-title>Select Option:</ion-card-title>
       </ion-card-header>
       <ion-card-content>
+        <!-- grid for responsiveness -->
         <ion-grid>
           <ion-row>
             <ion-col size="12">
@@ -35,10 +43,17 @@
         </ion-grid>
       </ion-card-content>
       }
-
+      <!-- card when user selects group -->
       @if (currentView() == 'group'){
       <ion-card-header>
-        <ion-card-title>Select Option:</ion-card-title>
+        <ion-toolbar color="transparent">
+          <ion-buttons slot="start">
+            <ion-button (click)="goBack()">
+              <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+          <ion-card-title>Enter Group Code</ion-card-title>
+        </ion-toolbar>
       </ion-card-header>
       <ion-card-content>
         <ion-grid>
@@ -61,17 +76,58 @@
         </ion-grid>
       </ion-card-content>
       }
+      
       @if (currentView() == 'create'){
-      <ion-card-header>
-        <ion-card-title>Group Code:</ion-card-title>
-        <ion-grid>
-          <ion-row>
-            {{groupCode()}}
-          </ion-row>
-        </ion-grid>
-      </ion-card-header>
-      <ion-card-content>
-      </ion-card-content>
+        <!-- allows user to go back -->
+        <ion-card-header>
+          <ion-toolbar color="transparent">
+            <ion-buttons slot="start">
+              <ion-button (click)="goBack()">
+                <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+              </ion-button>
+            </ion-buttons>
+            <ion-card-title>Enter Group Code</ion-card-title>
+          </ion-toolbar>
+        </ion-card-header>
+        <!-- card when user selects create group -->
+        <ion-card-content>  
+          <ion-grid>
+            <ion-row>
+              <ion-col size="12" class="ion-text-center">
+                <h1 class="groupCodeDisplay">{{groupCode()}} </h1>
+              </ion-col>
+              <ion-col size="12" class="ion-text-center">
+                <ion-button (click)="startSession()">
+                  Start Session
+                </ion-button>
+              </ion-col>
+            </ion-row>
+          </ion-grid>
+        </ion-card-content>
+      }
+      <!-- holds card when user selects join group -->
+      @if (currentView() == 'join'){
+        <ion-card-header>
+          <ion-toolbar color="transparent">
+            <ion-buttons slot="start">
+              <ion-button (click)="goBack()">
+                <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+              </ion-button>
+            </ion-buttons>
+            <ion-card-title>Enter Group Code</ion-card-title>
+          </ion-toolbar>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-grid>
+            <ion-row>
+              <ion-col size="12" class="ion-text-center">
+                <h1 class="joinDisplayCode">
+                  <ion-input [(ngModel)]="userJoinCode" name="joinInput" placeholder="Enter Group Code:"></ion-input>
+                </h1>
+              </ion-col>
+            </ion-row>
+          </ion-grid>
+        </ion-card-content>
       }
     </ion-card>
   </div>

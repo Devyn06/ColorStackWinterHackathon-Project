@@ -42,24 +42,49 @@ ion-spinner {
 
   ion-card {
     // This restores clicking for the actual card and buttons
+    height: 200px;
     pointer-events: auto; 
     margin: 0;
     border-radius: 30px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     background: var(--ion-card-background, rgb(255, 255, 255)); // The card itself should be solid
     
-    ion-card-title {
+    ion-card-header {
+      height: 40px;
+      padding-top: 8px; // Reduce top padding to move content up
+      padding-bottom: 4px; 
+      display: flex;
+      align-items: flex-start; // Aligns content to top of the 40px height
+    }
+    ion-toolbar {
       font-weight: 700;
       font-size: 1.2rem;
-    }
-    ion-row{
-      
-    }
+      margin-top: -7px; // Move the title specifically up
+    } 
+    
     ion-button {
       --border-radius: 12px;
       font-weight: 600;
       margin-top: 8px;
       height: 50px; // Larger touch targets for riders
     }
+    ion-card-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center; // Vertically center the grid
+      height: 160px;
+      padding: 16px;
+
+    ion-grid {
+        width: 100%; // Full width buttons
+      }
+    }
   }
+}
+.groupCodeDisplay {
+  font-size: 2.5rem;
+  font-weight: bold;
+  letter-spacing: 0.3em;
+  margin: 0;
+  color: var(--ion-color-primary);
 }

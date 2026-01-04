@@ -1,10 +1,10 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal,model,ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonInput,IonButtons,IonToolbar} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addCircleOutline, peopleOutline } from 'ionicons/icons';
+import { addCircleOutline, peopleOutline, arrowBack} from 'ionicons/icons';
 // API keys
 import { environment } from '../../../environments/environment';
 // impor to display the map
@@ -17,24 +17,47 @@ const mapKey = environment.mapsKey;
   templateUrl: './userhome.page.html',
   styleUrls: ['./userhome.page.scss'],
   standalone: true,
-  schemas:[],
   imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,
-    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner, MapDisplayComponent]
+    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner, MapDisplayComponent,IonInput,IonButtons,IonToolbar]
 })
 export class UserhomePage implements OnInit {
+  //allows us to use functions defined in map component 
+  @ViewChild('mapComp') mapComponent!: MapDisplayComponent;
+  // holds coordinates for last pin 
+  lastPin: {lat: number,lng:number} | null = null;
   mapReady = signal(false);
-  currentView = signal<'selection' | 'group' | 'create' | 'join'>('selection');
+
+  // what the user will view changes the on screen "cards" 
+  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'start'>('selection');
+
+  // holds group leaders code
   groupCode = signal('');
+  // holds user inputted code "writeable signal" 2 way binding
+  userJoinCode = model('');
 
   //receieves signal from map component 
   onMapReady(isReady:boolean){
     this.mapReady.set(isReady);
   }
   constructor() {
-    addIcons({ addCircleOutline, peopleOutline});
+    addIcons({ addCircleOutline, peopleOutline,arrowBack});
   }
   ngOnInit() {
   }
+
+  // function is called 
+  onPinDropped(coords: any){
+    this.lastPin = coords;
+    this.mapComponent.updateRideCircle(coords.lat,coords.lng,500);
+  }
+  onRadiusChange(event:any){
+    if(this.lastPin){
+      const newRadius = event.detail.value;
+      this.mapComponent.updateRideCircle(this.lastPin.lat,this.lastPin.lng,newRadius);
+    }
+  }
+
+
   selectGroup(){
     this.currentView.set('group');
   }
@@ -49,9 +72,9 @@ export class UserhomePage implements OnInit {
     this.currentView.set('selection');
   }
   joinGroup(){
-    //TO DO
+    this.currentView.set('join');
   }
   startSession(){
-    //to DO
+    this.currentView.set('start');
   }
 }
