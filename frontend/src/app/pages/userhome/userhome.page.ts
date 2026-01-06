@@ -9,6 +9,7 @@ import { addCircleOutline, peopleOutline, arrowBack} from 'ionicons/icons';
 import { environment } from '../../../environments/environment';
 // impor to display the map
 import { MapDisplayComponent } from '../../components/map-display/map-display.component';
+import { MenuScreenComponent } from '../../components/menu-screen/menu-screen.component';
 // gets API key from file
 const mapKey = environment.mapsKey;
 
@@ -18,7 +19,7 @@ const mapKey = environment.mapsKey;
   styleUrls: ['./userhome.page.scss'],
   standalone: true,
   imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,
-    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner, MapDisplayComponent,IonInput,IonButtons,IonToolbar]
+    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent]
 })
 export class UserhomePage implements OnInit {
   //allows us to use functions defined in map component 
