@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonHeader, IonTitle, IonToolbar,IonInput,IonItem,IonList,IonInputPasswordToggle,
   IonText,IonButton,IonBackButton,IonButtons,NavController} from '@ionic/angular/standalone';
 import { Router} from '@angular/router';
+import { Database, ref, push } from '@angular/fire/database'; // for firebase
 @Component({
   selector: 'app-login',
   templateUrl: './login.page.html',
@@ -16,10 +17,26 @@ export class LoginPage implements OnInit {
   userEmail:string = ''
   userPassword:string = ''
 
+  private db = inject(Database);
+
+  // Example job for Firebase
+  testSend() {
+    const testFolder = ref(this.db, 'test_jobs');
+
+    push(testFolder, {
+      message: "Testing!",
+      timestamp: new Date().toISOString()
+      })
+    .then(() => console.log("Firebase Success"))
+    .catch((err) => console.error('Firebase Error:', err));
+  }
+
+
   // injects router
   constructor(private router:Router,private navController:NavController) { }
 
   ngOnInit() {
+    this.testSend()
   }
   async onLogin(){
     // send userEmail and userPassword to DB, AUTHENTICATE LOGIN HERE (TEMP REDIRECTS USER TO USERHOME)
@@ -35,5 +52,5 @@ export class LoginPage implements OnInit {
   goToSignUp(){
     this.router.navigate(['/signup']);
   }
- 
+
 }
