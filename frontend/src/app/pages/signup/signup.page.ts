@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonHeader, IonTitle, IonToolbar,IonItem,IonList,IonInput,IonInputPasswordToggle,IonButton,IonText,IonBackButton,IonButtons } from '@ionic/angular/standalone';
+import { IonContent, IonHeader, IonTitle, IonToolbar,IonItem,IonList,IonInput,IonInputPasswordToggle,IonButton,IonText,IonBackButton,IonButtons,NavController } from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
-import { Auth, createUserWithEmailAndPassword} from '@angular/fire/auth';//for auth
-
+import {AuthService} from '../../services/auth.service';
 @Component({
   selector: 'app-signup',
   templateUrl: './signup.page.html',
@@ -21,29 +20,23 @@ export class SignupPage implements OnInit {
   confirmPassword:string = '';
   firstName:string = '';
   lastName:string ='';
-  constructor(private router:Router, private auth: Auth) { }
+
+  // ALL INJECTIONS same concept as const example = inject(test);
+  constructor(private router:Router, private auth: AuthService,private navController:NavController) { }
 
 
   ngOnInit() {
   }
 
-  onSignup(){
-    console.log(this.userEmail);
-    console.log(this.userPassword);
-    console.log(this.firstName);
-    console.log(this.lastName);
-    //routes to userhomepage
-    createUserWithEmailAndPassword(this.auth, this.userEmail, this.userPassword)
-      .then((userCredential)=>{
-        this.router.navigate(['/userhome']);
-      })
-      .catch((error) =>{
-        console.error('Auth Error (Login):', error.message);
+  async onSignup(){
+    const success = await this.auth.signup(this.userEmail,this.userPassword);
+    if (success){
+      this.navController.navigateRoot('/userhome',{
+        animated: true,
+        animationDirection: 'forward'
       });
-      
     }
-    
-  
+  }
   
   goLogin(){
     this.router.navigate(['/login']);
