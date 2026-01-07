@@ -43,8 +43,24 @@ This project uses a secure script to inject API keys.
 3.4 **Web Preview**: `npm start` (Runs the injector script + ng serve + creates environment files)
 3.5 **Mobile Build**: `npm run android` (Syncs native variables + opens Android Studio)
 
+
 4. Android Build
 Open the /android folder directly in Android Studio.
+
+
+5. Firebase Setup
+5.1 **Add google-services.json**: Download this file in Firebase Console in project settings, copy file to app folder in Android Studio, then go back to Github
+5.2 **Edit set-env.js file**: Add a new key called firebase to the content string. Get its value from "firebaseConfig" in project settings under the Web App
+5.3 **Make environment.ci.ts, environment.developments.ts**: Fill with dictionary below including the info from "firebaseConfig"
+    export const environment = {
+        production: false,
+        firebase: {
+            
+        }
+    };
+5.4 **Edit environment.prod.ts, environment.ts**: Add firebase key and all associated info
+
+Reopen the /android folder directly in Android Studio.
 
 Let the Gradle sync finish (it will automatically generate your local.properties).
 
@@ -55,3 +71,4 @@ Gradle Version: This project uses 8.11.1. If prompted to upgrade by Android Stud
 Known Issues & Troubleshooting
 
 1. SDK Not Found: If Android fails to build, ensure your ANDROID_HOME environment variable is set or check the local.properties file in the /android folder.
+2. Map doesn't load: If Android map does not load then switch to an emulator running Android 14..
