@@ -2,9 +2,9 @@ import { Component, OnInit, signal,model,ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle,IonLabel} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addCircleOutline, peopleOutline, arrowBack} from 'ionicons/icons';
+import { addCircleOutline, peopleOutline, arrowBack,warningOutline} from 'ionicons/icons';
 // API keys
 import { environment } from '../../../environments/environment';
 // impor to display the map
@@ -19,7 +19,7 @@ const mapKey = environment.mapsKey;
   styleUrls: ['./userhome.page.scss'],
   standalone: true,
   imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,
-    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent]
+    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel]
 })
 export class UserhomePage implements OnInit {
   //allows us to use functions defined in map component 
@@ -34,6 +34,7 @@ export class UserhomePage implements OnInit {
   curveToggled:boolean = false;
   weatherToggled:boolean = false;
   lightToggled:boolean = false;
+  pinCheck = signal(true);
 
   // holds value for circle drag slider
   sliderPercent:number = 1000;
@@ -62,7 +63,7 @@ export class UserhomePage implements OnInit {
     this.mapReady.set(isReady);
   }
   constructor() {
-    addIcons({ addCircleOutline, peopleOutline,arrowBack});
+    addIcons({ addCircleOutline, peopleOutline,arrowBack,warningOutline});
   }
   ngOnInit() {
   }
@@ -71,6 +72,7 @@ export class UserhomePage implements OnInit {
   onPinDropped(coords: any){
     this.lastPin = coords;
     this.mapComponent.updateRideCircle(coords.lat,coords.lng,this.sliderPercent);
+    this.pinCheck.set(false);
   }
 
 

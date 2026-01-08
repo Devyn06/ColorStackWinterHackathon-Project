@@ -13,7 +13,19 @@
     (pinDropped)="onPinDropped($event)"> 
   </app-map-display>
   <app-menu-screen></app-menu-screen>
+  
   <div class="bottom-container">
+    <!-- Warning sign -->
+    <div style="display: flex; justify-content: center; width: 100%;">
+    @if (pinCheck() && currentView() == 'start') {
+      <div class="pin-warning">
+        <ion-icon name="warning-outline" color="warning"></ion-icon>
+        <ion-label color="danger" style="font-weight: bold;">
+          Please drop a pin on the map
+        </ion-label>
+      </div>
+    }
+  </div>
     <ion-card>
       <!-- first card options single rider or group -->
       @if (currentView() == 'selection'){
@@ -172,7 +184,7 @@
           </ion-row>
           <ion-row>
             <ion-col class="ion-text-center">
-              <ion-button id="startButton">Confirm Ride</ion-button>
+              <ion-button [disabled]="pinCheck()" id="startButton">Confirm Ride</ion-button>
             </ion-col>
           </ion-row>
         </ion-grid>

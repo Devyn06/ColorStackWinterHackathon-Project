@@ -91,3 +91,32 @@ ion-spinner {
   margin: 0;
   color: var(--ion-color-primary);
 }
+.pin-warning {
+  /* Box Styling */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.9); /* White rectangle */
+  border: 2px solid var(--ion-color-warning); /* Yellow border */
+  padding: 8px 16px;
+  border-radius: 50px; /* Pill shape */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  margin-bottom: 12px;
+
+  /* Animation Trigger */
+  animation: pulse-size 2s infinite ease-in-out;
+}
+
+/* The "Small and Big" Animation */
+@keyframes pulse-size {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08); /* Slightly bigger */
+  }
+  100% {
+    transform: scale(1);
+  }
+}
