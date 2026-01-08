@@ -1,3 +1,8 @@
+plugins {
+    // Firebase
+    id("com.android.application")
+    id("com.google.gms.google-services")
+}
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'org.jetbrains.kotlin.android'
@@ -52,6 +57,12 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    // Desired Firebase Products
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-database")
 }
 
 apply from: 'capacitor.build.gradle'

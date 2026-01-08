@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonHeader, IonTitle, IonToolbar,IonItem,IonList,IonInput,IonInputPasswordToggle,IonButton,IonText,IonBackButton,IonButtons } from '@ionic/angular/standalone';
+import { IonContent, IonHeader, IonTitle, IonToolbar,IonItem,IonList,IonInput,IonInputPasswordToggle,IonButton,IonText,IonBackButton,IonButtons,NavController } from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
+import {AuthService} from '../../services/auth.service';
 @Component({
   selector: 'app-signup',
   templateUrl: './signup.page.html',
@@ -10,6 +11,8 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [IonContent, IonHeader, IonTitle, IonToolbar, CommonModule, FormsModule,IonItem,IonList,IonInput,IonInputPasswordToggle,IonBackButton,IonButtons,IonText,IonButton]
 })
+
+
 export class SignupPage implements OnInit {
   //user info on signup
   userEmail:string = '';
@@ -17,18 +20,22 @@ export class SignupPage implements OnInit {
   confirmPassword:string = '';
   firstName:string = '';
   lastName:string ='';
-  constructor(private router:Router) { }
+
+  // ALL INJECTIONS same concept as const example = inject(test);
+  constructor(private router:Router, private auth: AuthService,private navController:NavController) { }
+
 
   ngOnInit() {
   }
 
-  onSignup(){
-    console.log(this.userEmail);
-    console.log(this.userPassword);
-    console.log(this.firstName);
-    console.log(this.lastName);
-    //routes to userhomepage
-    this.router.navigate(['/userhome']);
+  async onSignup(){
+    const success = await this.auth.signup(this.userEmail,this.userPassword);
+    if (success){
+      this.navController.navigateRoot('/userhome',{
+        animated: true,
+        animationDirection: 'forward'
+      });
+    }
   }
   
   goLogin(){

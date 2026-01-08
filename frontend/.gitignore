@@ -68,6 +68,9 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+#script stores api keys 
+src/environments/environment.ci.ts
+src/environments/environment.development.ts
 src/environments/environment.ts
 src/environments/environment.prod.ts
 .env
