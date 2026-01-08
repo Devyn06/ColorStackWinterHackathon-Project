@@ -1,11 +1,11 @@
-import { Component, OnInit,inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonHeader, IonTitle, IonToolbar,IonInput,IonItem,IonList,IonInputPasswordToggle,
   IonText,IonButton,IonBackButton,IonButtons,NavController} from '@ionic/angular/standalone';
 import { Router} from '@angular/router';
 import {AuthService} from '../../services/auth.service';
-import { Database, ref, push } from '@angular/fire/database'; // for firebase
+import {TrackingService} from '../../services/tracking.service';
 @Component({
   selector: 'app-login',
   templateUrl: './login.page.html',
@@ -17,27 +17,17 @@ export class LoginPage implements OnInit {
   // holds user info for login
   userEmail:string = ''
   userPassword:string = ''
-  loginButtonColor='Primary';
-  private db = inject(Database);
-
-  // Example job for Firebase
-  testSend() {
-    const testFolder = ref(this.db, 'test_jobs');
-
-    push(testFolder, {
-      message: "Testing!",
-      timestamp: new Date().toISOString()
-      })
-    .then(() => console.log("Firebase Success"))
-    .catch((err) => console.error('Firebase Error:', err));
-  }
-
-
-  // injects router
-  constructor(private router:Router,private navController:NavController,private authService:AuthService) { }
+  loginButtonColor='primary';
+  // Injections same concept as 'privte example = inject(test)'
+  constructor(
+    private trackingService:TrackingService,
+    private router:Router,
+    private navController:NavController,
+    private authService:AuthService
+  ) { }
 
   ngOnInit() {
-    // this.testSend()
+    this.trackingService.testSend();
   }
   async onLogin(){
     const success = await this.authService.login(this.userEmail,this.userPassword)

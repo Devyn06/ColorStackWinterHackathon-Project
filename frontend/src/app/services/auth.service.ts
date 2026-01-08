@@ -61,4 +61,10 @@ export class AuthService {
     this.currentUser.set(null);
     this.router.navigate(['/']);
   }
+
+  getUserId(){
+    // gets users unique ID
+    return this.currentUser()?.uid || null;
+  }
+
 }

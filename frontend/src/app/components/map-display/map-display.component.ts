@@ -2,7 +2,7 @@ import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA,ViewChild,ElementRef,signal,o
 import { ToastController} from '@ionic/angular/standalone';
 import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from '../../../environments/environment';
-import { Geolocation } from '@capacitor/geolocation';
+import {LocationService} from '../../services/location.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 // api key
@@ -15,7 +15,7 @@ const mapKey = environment.mapsKey;
   imports: [ CommonModule, FormsModule],
 })
 export class MapDisplayComponent  implements OnInit {
-
+  
   private markerIds: string[] = [];
   private circleId: string | null = null;
   // output values sent to userhome page
@@ -24,7 +24,7 @@ export class MapDisplayComponent  implements OnInit {
   pinDropped = output<{lat: number, lng: number}>();
   
   // injects toastController, used when location services is denied
-  constructor(private toastController:ToastController) { }
+  constructor(private toastController:ToastController,private locationService:LocationService) { }
 
   ngOnInit() {}
 
@@ -36,8 +36,10 @@ export class MapDisplayComponent  implements OnInit {
   
   async initMapAtCurrentLocation(){
       try{
-        //device lat and long 
-        const { latitude, longitude } = (await this.getDeviceGeoLocation()).coords;
+        //calls service to retrieve device coordinates 
+        const coordinates = await this.locationService.getCurrentLocation();
+        const { latitude, longitude } = coordinates.coords;
+
         // creates the map with geolocation 
         this.newMap = await GoogleMap.create({
           id: 'moto-safe',
@@ -54,8 +56,21 @@ export class MapDisplayComponent  implements OnInit {
           this.createPin(event);
         });
 
-        // shows your current location on map *Blue dot*
+        // shows your current location on map *Blue dot* ONLY TO LOAD MAP
         await this.newMap.enableCurrentLocation(true);
+        
+        // shows LIVE location as you move
+        await this.locationService.watchPosition((pos) => {
+          if(pos && this.newMap){
+            this.newMap.setCamera({
+              coordinate:{
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude
+              },
+              animate:true
+            });
+          }
+        });
         // toggles loading spinner
         this.mapReady.emit(true);
 
@@ -69,9 +84,10 @@ export class MapDisplayComponent  implements OnInit {
       }
     }
     async ngOnDestroy(){
-    if (this.newMap){
-      await this.newMap.destroy();
-    }
+      if (this.newMap){
+        await this.newMap.destroy();
+      }
+    await this.locationService.stopWatching();
     }
     private async showErrorToast(message: string){
       // creates message display for user with error message
@@ -84,24 +100,7 @@ export class MapDisplayComponent  implements OnInit {
       //displays toast
       await toast.present();
     }
-    async getDeviceGeoLocation(){
-      // Checks if permission is given from USER
-        let permStatus = await Geolocation.checkPermissions();
-        if (permStatus.location !== 'granted'){
-          permStatus = await Geolocation.requestPermissions();
-          if (permStatus.location !== 'granted'){
-            //throws error if user denies location services
-            throw new Error('Failed to load map. Please allow location services.');
-          }
-        }
-        // gets device location
-        const coordinates = await Geolocation.getCurrentPosition({
-          enableHighAccuracy:true,
-          timeout: 30000,
-          maximumAge: 60000 // accepts cached location up to 1 minute old
-        });
-        return coordinates;
-    }
+    
     // creates MARKER for google map
     async createPin(event: any){
       const {latitude,longitude} = event;
