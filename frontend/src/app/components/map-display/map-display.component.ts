@@ -134,7 +134,8 @@ export class MapDisplayComponent  implements OnInit {
         fillColor: '#3880ff',
         fillOpacity: 0.2,
         strokeColor: '#3880ff',
-        strokeWeight: 2
+        strokeWeight: 2,
+        clickable: false
       };
       const result = await this.newMap.addCircles([circleOptions]);
       // circle id is stored to update or delete later

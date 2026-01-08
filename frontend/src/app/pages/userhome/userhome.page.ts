@@ -2,7 +2,7 @@ import { Component, OnInit, signal,model,ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonInput,IonButtons,IonToolbar} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addCircleOutline, peopleOutline, arrowBack} from 'ionicons/icons';
 // API keys
@@ -19,15 +19,36 @@ const mapKey = environment.mapsKey;
   styleUrls: ['./userhome.page.scss'],
   standalone: true,
   imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,
-    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent]
+    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent]
 })
 export class UserhomePage implements OnInit {
   //allows us to use functions defined in map component 
   @ViewChild('mapComp') mapComponent!: MapDisplayComponent;
+
   // holds coordinates for last pin 
   lastPin: {lat: number,lng:number} | null = null;
-  mapReady = signal(false);
 
+  mapReady = signal(false);
+  // holds all toggles for each factor
+  speedToggled:boolean = false;
+  curveToggled:boolean = false;
+  weatherToggled:boolean = false;
+  lightToggled:boolean = false;
+
+  // holds value for circle drag slider
+  sliderPercent:number = 1000;
+
+
+  onIonChange(event:RangeCustomEvent){
+    const newRadius = event.detail.value as number;
+    
+    this.sliderPercent = newRadius*10;
+    // checks if user placed a pin to update circle with pin
+    if(this.lastPin){
+      this.mapComponent.updateRideCircle(this.lastPin.lat,this.lastPin.lng,this.sliderPercent);
+    }
+    console.log(this.sliderPercent);
+  }
   // what the user will view changes the on screen "cards" 
   currentView = signal<'selection' | 'group' | 'create' | 'join' | 'start'>('selection');
 
@@ -46,36 +67,24 @@ export class UserhomePage implements OnInit {
   ngOnInit() {
   }
 
-  // function is called 
+  // send data to map component to create a pin with circle
   onPinDropped(coords: any){
     this.lastPin = coords;
-    this.mapComponent.updateRideCircle(coords.lat,coords.lng,500);
-  }
-  onRadiusChange(event:any){
-    if(this.lastPin){
-      const newRadius = event.detail.value;
-      this.mapComponent.updateRideCircle(this.lastPin.lat,this.lastPin.lng,newRadius);
-    }
+    this.mapComponent.updateRideCircle(coords.lat,coords.lng,this.sliderPercent);
   }
 
 
-  selectGroup(){
-    this.currentView.set('group');
-  }
   createGroup(){
-    //creates code for user
+    //creates group code for user
     const code = Math.random().toString(36).substring(2,8).toUpperCase();
     this.groupCode.set(code);
     //changes users view
     this.currentView.set('create');
   }
-  goBack(){
-    this.currentView.set('selection');
-  }
-  joinGroup(){
-    this.currentView.set('join');
-  }
-  startSession(){
-    this.currentView.set('start');
-  }
+
+  // Card routes (what user can see)
+  selectGroup(){this.currentView.set('group');}
+  goBack(){this.currentView.set('selection');}
+  joinGroup(){this.currentView.set('join');}
+  startSession(){this.currentView.set('start');}
 }
