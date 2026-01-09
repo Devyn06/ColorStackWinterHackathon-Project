@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
 // impor to display the map
 import { MapDisplayComponent } from '../../components/map-display/map-display.component';
 import { MenuScreenComponent } from '../../components/menu-screen/menu-screen.component';
+import { Router} from '@angular/router';
 // gets API key from file
 const mapKey = environment.mapsKey;
 
@@ -62,7 +63,7 @@ export class UserhomePage implements OnInit {
   onMapReady(isReady:boolean){
     this.mapReady.set(isReady);
   }
-  constructor() {
+  constructor(private router:Router) {
     addIcons({ addCircleOutline, peopleOutline,arrowBack,warningOutline});
   }
   ngOnInit() {
