@@ -18,7 +18,7 @@ export class LoginPage implements OnInit {
   userEmail:string = ''
   userPassword:string = ''
   loginButtonColor='primary';
-  // Injections same concept as 'privte example = inject(test)'
+  // Injections same concept as 'private example = inject(test)'
   constructor(
     private trackingService:TrackingService,
     private router:Router,

@@ -5,7 +5,7 @@ import { IonContent, IonHeader, IonTitle, IonToolbar,IonInput,IonItem,IonList,Io
   IonText,IonButton,IonBackButton,IonButtons,NavController} from '@ionic/angular/standalone';
 import { Router} from '@angular/router';
 import {AuthService} from '../../services/auth.service';
-import {TrackingService} from '../../services/tracking.service';
+import { getDatabase, ref, get } from '@angular/fire/database'; // for firebase
 
 @Component({
   selector: 'app-userProfile',
@@ -18,9 +18,19 @@ export class UserProfilePage implements OnInit {
     // ALL INJECTIONS same concept as const example = inject(test);
     constructor(private router:Router, private authService: AuthService,private navController:NavController) { }
 
-    ngOnInit() {
+    async ngOnInit() {
+      await this.loadUser();
     }
 
+    async loadUser(){
+      const userInfo = (await (get(ref(this.db, `userDB/${this.authService.getUserId()}`)))).val();
+      this.userData = {
+        fName : userInfo.firstName,
+        lName : userInfo.lastName
+      }
+    };
+    private db = getDatabase();
+    userData: { fName?: string; lName?: string } = {}; 
     email = this.authService.currentUser()?.email;
 
     async onSignout(){

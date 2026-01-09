@@ -14,9 +14,10 @@
     </ion-toolbar>
   </ion-header>
   <h1>User Profile</h1>
-  <ion-text>
-    Email: {{ email }}!
-  </ion-text>
+  <ion-text> First Name: {{ userData.fName }}<br/></ion-text>
+  <ion-text>Last Name: {{ userData.lName }}<br/></ion-text> 
+  <ion-text>Email: {{ email }}<br/></ion-text>
+
   <ion-button color="danger" expand="block" (click)="onSignout()" shape="round" class="ion-margin-top">
     Logout
   </ion-button>
