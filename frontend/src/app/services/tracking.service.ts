@@ -20,18 +20,17 @@ export class TrackingService {
   }
 
   // Save a User's Location to Firebase
-  async saveLocationToFirebase(userId: string, position: any) {
+  async saveLocationToFirebase(userId: string, sessionId: string, position: any) {
     try {
-      const path = `users/${userId}/tracking`;
+      const pingTime = Date.now()
+
+      const path = `users/${userId}/logs/${sessionId}/pings/${pingTime}`;
       const trackingRef = ref(this.db, path);
 
-      const newRef = push(trackingRef);
-
-      await set(newRef, {
+      await set(trackingRef, {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
         timestamp: position.timestamp,
-        user: userId
       });
 
       console.log("Location saved!")

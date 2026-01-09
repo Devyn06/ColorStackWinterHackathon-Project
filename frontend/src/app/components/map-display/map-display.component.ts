@@ -34,6 +34,8 @@ export class MapDisplayComponent  implements OnInit {
   private lastSave = 0;
   private readonly SAVE_INTERVAL = 10000 // 10 secs
 
+  private sessionId = "ERR";
+
   ngOnInit() {}
 
   @ViewChild('mapElement') mapRef!: ElementRef<HTMLElement>;
@@ -59,6 +61,13 @@ export class MapDisplayComponent  implements OnInit {
             }
         });
 
+        const date = new Date();
+        this.sessionId = date.toISOString()
+          .split('.')[0]          // Remove milliseconds
+          .replace(/:/g, '-')     // Replace colons with dashes
+          .replace('T', '_');     // Replace 'T' with underscore
+
+
         // listener to connect native maps 'click' event to our function
         await this.newMap.setOnMapClickListener((event) =>{
           this.createPin(event);
@@ -82,7 +91,7 @@ export class MapDisplayComponent  implements OnInit {
             if (currentTime - this.lastSave > this.SAVE_INTERVAL) {
               const userId = await this.authService.getUserId();
               if (userId) {
-                this.trackingService.saveLocationToFirebase(userId, pos);
+                this.trackingService.saveLocationToFirebase(userId, this.sessionId, pos);
                 this.lastSave = currentTime;
               }
             }
