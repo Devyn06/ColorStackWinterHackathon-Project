@@ -1,8 +1,10 @@
-import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA,ViewChild,ElementRef,signal,output} from '@angular/core';
+import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA,ViewChild,ElementRef,signal,output} from '@angular/core';
 import { ToastController} from '@ionic/angular/standalone';
 import { GoogleMap } from '@capacitor/google-maps';
 import { environment } from '../../../environments/environment';
 import {LocationService} from '../../services/location.service';
+import {TrackingService} from '../../services/tracking.service';
+import {AuthService} from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 // api key
@@ -15,16 +17,22 @@ const mapKey = environment.mapsKey;
   imports: [ CommonModule, FormsModule],
 })
 export class MapDisplayComponent  implements OnInit {
-  
+
   private markerIds: string[] = [];
   private circleId: string | null = null;
   // output values sent to userhome page
   mapReady = output<boolean>();
   // tells userhome location of pin
   pinDropped = output<{lat: number, lng: number}>();
-  
+
   // injects toastController, used when location services is denied
   constructor(private toastController:ToastController,private locationService:LocationService) { }
+  // services to use in map
+  private trackingService = inject(TrackingService);
+  private authService = inject(AuthService);
+
+  private lastSave = 0;
+  private readonly SAVE_INTERVAL = 10000 // 10 secs
 
   ngOnInit() {}
 
@@ -33,34 +41,34 @@ export class MapDisplayComponent  implements OnInit {
   async ngAfterViewInit(){
     await this.initMapAtCurrentLocation();
   }
-  
+
   async initMapAtCurrentLocation(){
       try{
-        //calls service to retrieve device coordinates 
+        //calls service to retrieve device coordinates
         const coordinates = await this.locationService.getCurrentLocation();
         const { latitude, longitude } = coordinates.coords;
 
-        // creates the map with geolocation 
+        // creates the map with geolocation
         this.newMap = await GoogleMap.create({
           id: 'moto-safe',
           element: this.mapRef.nativeElement,
           apiKey: mapKey,
           config: {
-            center: { lat: latitude, lng: longitude }, 
+            center: { lat: latitude, lng: longitude },
             zoom: 15
             }
         });
 
-        // listener to connect native maps 'click' event to our function 
+        // listener to connect native maps 'click' event to our function
         await this.newMap.setOnMapClickListener((event) =>{
           this.createPin(event);
         });
 
         // shows your current location on map *Blue dot* ONLY TO LOAD MAP
         await this.newMap.enableCurrentLocation(true);
-        
+
         // shows LIVE location as you move
-        await this.locationService.watchPosition((pos) => {
+        await this.locationService.watchPosition(async (pos) => {
           if(pos && this.newMap){
             this.newMap.setCamera({
               coordinate:{
@@ -69,6 +77,15 @@ export class MapDisplayComponent  implements OnInit {
               },
               animate:true
             });
+            // Only update if more than 5 seconds have passed
+            const currentTime = Date.now();
+            if (currentTime - this.lastSave > this.SAVE_INTERVAL) {
+              const userId = await this.authService.getUserId();
+              if (userId) {
+                this.trackingService.saveLocationToFirebase(userId, pos);
+                this.lastSave = currentTime;
+              }
+            }
           }
         });
         // toggles loading spinner
@@ -78,7 +95,7 @@ export class MapDisplayComponent  implements OnInit {
       } catch (err:any){
           console.error("Map initilization failed:",err);
           const errMsg = err?.message || 'Failed to load map. Please allow location services.';
-          //calls function to show user a toast message with error that was caught 
+          //calls function to show user a toast message with error that was caught
           await this.showErrorToast(errMsg);
           this.mapReady.emit(false);
       }
@@ -100,7 +117,7 @@ export class MapDisplayComponent  implements OnInit {
       //displays toast
       await toast.present();
     }
-    
+
     // creates MARKER for google map
     async createPin(event: any){
       const {latitude,longitude} = event;
@@ -119,7 +136,7 @@ export class MapDisplayComponent  implements OnInit {
       this.pinDropped.emit({lat:latitude,lng:longitude});
     }
 
-    // updates circle 
+    // updates circle
     async updateRideCircle(lat:number,lng:number,radius:number){
       // condition to delete circle if a circle exists
       if(this.circleId){
