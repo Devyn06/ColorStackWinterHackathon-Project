@@ -11,6 +11,7 @@ import { environment } from '../../../environments/environment';
 import { MapDisplayComponent } from '../../components/map-display/map-display.component';
 import { MenuScreenComponent } from '../../components/menu-screen/menu-screen.component';
 import { Keyboard } from '@capacitor/keyboard';
+import { Router} from '@angular/router';
 // gets API key from file
 const mapKey = environment.mapsKey;
 
@@ -75,7 +76,7 @@ export class UserhomePage implements OnInit {
   }
 
 
-  constructor(private renderer: Renderer2, private el: ElementRef) {
+  constructor(private router:Router,private renderer: Renderer2, private el: ElementRef) {
     addIcons({ addCircleOutline, peopleOutline,arrowBack,warningOutline});
   }
 

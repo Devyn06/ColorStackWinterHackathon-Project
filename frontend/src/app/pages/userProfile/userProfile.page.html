@@ -1,0 +1,24 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+    <ion-back-button defaultHref="/"></ion-back-button>
+  </ion-buttons>
+    <ion-title>User Profile</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="medium">User Profile</ion-title>
+    </ion-toolbar>
+  </ion-header>
+  <h1>User Profile</h1>
+  <ion-text> First Name: {{ userData.fName }}<br/></ion-text>
+  <ion-text>Last Name: {{ userData.lName }}<br/></ion-text> 
+  <ion-text>Email: {{ email }}<br/></ion-text>
+
+  <ion-button color="danger" expand="block" (click)="onSignout()" shape="round" class="ion-margin-top">
+    Logout
+  </ion-button>
+</ion-content>

@@ -52,12 +52,14 @@ Open the /android folder directly in Android Studio.
 5.1 **Add google-services.json**: Download this file in Firebase Console in project settings, copy file to app folder in Android Studio, then go back to Github
 5.2 **Edit set-env.js file**: Add a new key called firebase to the content string. Get its value from "firebaseConfig" in project settings under the Web App
 5.3 **Make environment.ci.ts, environment.developments.ts**: Fill with dictionary below including the info from "firebaseConfig"
+
     export const environment = {
         production: false,
         firebase: {
             
         }
     };
+    
 5.4 **Edit environment.prod.ts, environment.ts**: Add firebase key and all associated info
 
 Reopen the /android folder directly in Android Studio.
