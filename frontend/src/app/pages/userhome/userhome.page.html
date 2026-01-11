@@ -7,13 +7,13 @@
   }
   <!-- displays Map component and sends signal to remove loading screen -->
    <!-- mapReady and pinDropped is called to connect map component and user functions -->
-  <app-map-display 
-    #mapComp 
+  <app-map-display
+    #mapComp
     (mapReady)="onMapReady($event)"
-    (pinDropped)="onPinDropped($event)"> 
+    (pinDropped)="onPinDropped($event)">
   </app-map-display>
   <app-menu-screen></app-menu-screen>
-  
+
   <div class="bottom-container">
     <!-- Warning sign -->
     <div style="display: flex; justify-content: center; width: 100%;">
@@ -30,7 +30,7 @@
       <!-- first card options single rider or group -->
       @if (currentView() == 'selection'){
       <ion-card-header>
-        
+
         <ion-card-title>Select Option:</ion-card-title>
       </ion-card-header>
       <ion-card-content>
@@ -88,13 +88,13 @@
         </ion-grid>
       </ion-card-content>
       }
-      
+
       @if (currentView() == 'create'){
         <!-- allows user to go back -->
         <ion-card-header>
           <ion-toolbar color="transparent">
             <ion-buttons slot="start">
-              <ion-button (click)="goBack()">
+              <ion-button (click)="goBackHost()">
                 <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
               </ion-button>
             </ion-buttons>
@@ -102,11 +102,11 @@
           </ion-toolbar>
         </ion-card-header>
         <!-- card when user selects create group -->
-        <ion-card-content>  
+        <ion-card-content>
           <ion-grid>
             <ion-row>
               <ion-col size="12" class="ion-text-center">
-                <h1 class="groupCodeDisplay">{{groupCode()}} </h1>
+                <h1 class="groupCodeDisplay">{{groupCode}} </h1>
               </ion-col>
               <ion-col size="12" class="ion-text-center">
                 <ion-button (click)="startSession()">
@@ -122,7 +122,7 @@
         <ion-card-header>
           <ion-toolbar color="transparent">
             <ion-buttons slot="start">
-              <ion-button (click)="goBack()">
+              <ion-button (click)="goBackMember()">
                 <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
               </ion-button>
             </ion-buttons>
@@ -134,7 +134,12 @@
             <ion-row>
               <ion-col size="12" class="ion-text-center">
                 <h1 class="joinDisplayCode">
-                  <ion-input [(ngModel)]="userJoinCode" name="joinInput" placeholder="Enter Group Code:"></ion-input>
+                  <ion-input
+                    [(ngModel)]="userJoinCode"
+                    (keyup.enter)="attemptJoin()"
+                    name="joinInput"
+                    placeholder="Enter Group Code:">
+                  </ion-input>
                 </h1>
               </ion-col>
             </ion-row>
@@ -145,7 +150,7 @@
         <ion-card-header>
           <ion-toolbar color="transparent">
             <ion-buttons slot="start">
-              <ion-button (click)="goBack()">
+              <ion-button (click)="goBackHost()">
                 <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
               </ion-button>
             </ion-buttons>
@@ -173,10 +178,10 @@
           </ion-row>
           <ion-row>
             <ion-col size="10" class="ion-text-left">
-              <ion-range 
+              <ion-range
                   [min]="100"
                   [max]="500"
-                  aria-label="Range with ionChange" 
+                  aria-label="Range with ionChange"
                   (ionInput)="onIonChange($event)"
                   labelPlacement="start" label="Circle Radius:">
               </ion-range>
