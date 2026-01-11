@@ -18,22 +18,33 @@ export class MapDisplayComponent  implements OnInit {
   
   private markerIds: string[] = [];
   private circleId: string | null = null;
+  private circleUpdateLock = false;
   // output values sent to userhome page
   mapReady = output<boolean>();
+
   // tells userhome location of pin
   pinDropped = output<{lat: number, lng: number}>();
   
-  // injects toastController, used when location services is denied
+  // Injections
   constructor(private toastController:ToastController,private locationService:LocationService) { }
 
+  //life cycle hooks
   ngOnInit() {}
-
-  @ViewChild('mapElement') mapRef!: ElementRef<HTMLElement>;
-  newMap!: GoogleMap;
   async ngAfterViewInit(){
     await this.initMapAtCurrentLocation();
   }
-  
+
+  async ngOnDestroy(){
+      if (this.newMap){await this.newMap.destroy();} 
+      if (this.circleId){await this.newMap.removeCircles([this.circleId])}; 
+      this.circleId = null;
+      await this.locationService.stopWatching();
+  }
+
+
+  @ViewChild('mapElement') mapRef!: ElementRef<HTMLElement>;
+  newMap!: GoogleMap;
+
   async initMapAtCurrentLocation(){
       try{
         //calls service to retrieve device coordinates 
@@ -83,12 +94,7 @@ export class MapDisplayComponent  implements OnInit {
           this.mapReady.emit(false);
       }
     }
-    async ngOnDestroy(){
-      if (this.newMap){
-        await this.newMap.destroy();
-      }
-    await this.locationService.stopWatching();
-    }
+    
     private async showErrorToast(message: string){
       // creates message display for user with error message
       const toast = await this.toastController.create({
@@ -120,24 +126,37 @@ export class MapDisplayComponent  implements OnInit {
     }
 
     // updates circle 
+
     async updateRideCircle(lat:number,lng:number,radius:number){
       // condition to delete circle if a circle exists
-      if(this.circleId){
-        await this.newMap.removeCircles([this.circleId]);
-      }
+      if(this.circleUpdateLock){return;}
+      this.circleUpdateLock = true;
 
-      //creates a new circle
-      const circleOptions = {
-        center: {lat, lng},
-        radius: radius,
-        fillColor: '#3880ff',
-        fillOpacity: 0.2,
-        strokeColor: '#3880ff',
-        strokeWeight: 2,
-        clickable: false
-      };
-      const result = await this.newMap.addCircles([circleOptions]);
-      // circle id is stored to update or delete later
-      this.circleId = result[0];
+      try{
+        if(this.circleId){
+          await this.newMap.removeCircles([this.circleId]);
+          this.circleId=null;
+        }
+        //creates a new circle
+        const circleOptions = {
+          center: {lat, lng},
+          radius: radius,
+          fillColor: '#3880ff',
+          fillOpacity: 0.2,
+          strokeColor: '#3880ff',
+          strokeWeight: 2,
+          clickable: false
+        };
+        
+        const result = await this.newMap.addCircles([circleOptions]);
+        
+        // circle id is stored to update or delete later
+        this.circleId = result[0];
+      
+      } 
+      // prevents deadlock
+      finally{
+        this.circleUpdateLock=false;
+      }
     }
 }
