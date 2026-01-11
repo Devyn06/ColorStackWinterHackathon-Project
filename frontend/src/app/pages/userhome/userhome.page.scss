@@ -32,13 +32,17 @@ ion-spinner {
 .bottom-container {
   position: absolute;
   bottom: 0;
-  left: 0;  
+  left: 0;   
   right: 0;
   padding: 10px;
-  padding-bottom: 20px; // Extra space for gesture navigation bars
+  padding-bottom: 20px;
   z-index: 10;
-  // This allows you to click the map "through" the empty spaces in this container
   pointer-events: none;
+
+  /* ADD THESE TWO LINES */
+  transform: translateY(calc(-1 * var(--keyboard-offset, 0px)));
+  transition: transform 0.3s ease-out;
+  
 
   ion-card {
     // This restores clicking for the actual card and buttons
@@ -107,7 +111,38 @@ ion-spinner {
   /* Animation Trigger */
   animation: pulse-size 2s infinite ease-in-out;
 }
+#rideInProgress {
+  position: absolute;
+  bottom: 20px;
+  left: 10px;
+  right: 10px;
+  margin: 0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  pointer-events: auto; /* Ensure clicks still work */
 
+  // OVERRIDE the global 200px height you set for ion-card
+  height: auto !important; 
+  min-height: unset !important;
+
+  ion-card-content {
+    // OVERRIDE the global 160px height you set for ion-card-content
+    height: auto !important; 
+    padding: 8px 16px !important; // Slimmer vertical padding
+    display: block; // Remove the flex centering if it adds unwanted space
+  }
+
+  ion-grid {
+    padding: 0; // Remove extra grid padding
+  }
+
+  ion-button {
+    margin: 0; // Remove the 8px top margin you have globally
+    height: 45px; // Slightly shorter button for a compact look
+  }
+}
 /* The "Small and Big" Animation */
 @keyframes pulse-size {
   0% {

@@ -26,6 +26,7 @@
       </div>
     }
   </div>
+  @if (display()){
     <ion-card>
       <!-- first card options single rider or group -->
       @if (currentView() == 'selection'){
@@ -141,6 +142,7 @@
           </ion-grid>
         </ion-card-content>
       }
+      <!-- Route filter/confirm ride screen -->
       @if (currentView() == 'start'){
         <ion-card-header>
           <ion-toolbar color="transparent">
@@ -184,11 +186,47 @@
           </ion-row>
           <ion-row>
             <ion-col class="ion-text-center">
-              <ion-button [disabled]="pinCheck()" id="startButton">Confirm Ride</ion-button>
+              <ion-button [disabled]="pinCheck()" id="startButton" (click)="confirm()">Confirm Ride</ion-button>
             </ion-col>
           </ion-row>
         </ion-grid>
       }
     </ion-card>
+  }
+  @else{
+      <ion-card id="rideInProgress">
+        <ion-card-content>
+          <ion-grid>
+            <ion-row class="ion-align-items-center">
+              @if (currentView() == 'tracking'){
+                <ion-col size="4">
+                  <div class="time-container">
+                    <small>TIME</small>
+                    <div class="current-time">{{currentTime()}}</div>
+                  </div>
+                </ion-col>
+                <ion-col size="8">
+                  <ion-button expand="block" color="danger" shape="round" (click)="endOptions()">
+                    END ROUTE
+                  </ion-button>
+                </ion-col>
+              }
+              @else if (currentView() == 'end'){
+                <ion-col size="6">
+                  <ion-button expand="block" color="danger" shape="round" (click)="goBack()">
+                    End Session
+                  </ion-button>
+                </ion-col>
+                <ion-col size="6">
+                  <ion-button expand="block" color="success" shape="round" (click)="startSession()">
+                    New Route
+                  </ion-button>
+                </ion-col>
+              }
+            </ion-row>
+          </ion-grid>
+        </ion-card-content>
+      </ion-card>
+  }
   </div>
 </ion-content>
