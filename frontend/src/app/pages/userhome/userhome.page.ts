@@ -143,7 +143,7 @@ export class UserhomePage implements OnInit {
 
     // No group found
     if (!groupData) {
-      alert("Group not found. Please check the code.");
+      alert("Group not found. Please check the Group Code.");
       return;
     }
     // Group is closed (unjoinable)
@@ -205,7 +205,7 @@ export class UserhomePage implements OnInit {
   // Going back as a host in a group
   async goBackHost() {
     // Remove group from firebase and get rid of group code
-    //await this.trackingService.removeGroupFromFirebase(this.groupService.groupCode());
+    await this.trackingService.removeGroupFromFirebase(this.groupService.groupCode());
     this.groupService.groupCode.set(null);
     this.groupCode = '';
 
@@ -263,6 +263,8 @@ export class UserhomePage implements OnInit {
     const uid = this.authService.getUserId();
     this.trackingService.removeUserFromGroup(uid || 'null',this.groupCode)
     this.currentView.set('group');
+    this.groupService.groupCode.set(null);
+    this.groupCode ='';
     document.documentElement.style.setProperty('--height', '200px');
   }
 
@@ -274,20 +276,28 @@ export class UserhomePage implements OnInit {
     const membersInSync = Object.keys(members);
     console.log('members keys received:', membersInSync);
     const dbRef = ref(this.db);
-    //this.groupMembers = [];
     const memberList: string[] = [];
 
+  
+  const snapshot = await get(child(dbRef, `groups/${this.groupCode}/host`));
+  //Check if host is still in room an if not kicks user
+    if (snapshot.exists()) {
+      //Finds names of all users in room
+      for(const Id of membersInSync){
+        const snapshot = await get(child(dbRef, `userDB/${Id}`));
 
-    // Look specifically for the group and its joinable status
-    for(const Id of membersInSync){
-      const snapshot = await get(child(dbRef, `userDB/${Id}`));
-
-      if (snapshot.exists()) {
-        const member = snapshot.val();
-        memberList.push(member.firstName + ' ' + member.lastName);
-        console.log('member is: ' + member.firstName); // Returns major info of the group
+        if (snapshot.exists()) {
+          const member = snapshot.val();
+          memberList.push(member.firstName + ' ' + member.lastName);
+          console.log('member is: ' + member.firstName); // Returns major info of the group
+        }
       }
+      this.groupMembers.set(memberList);
     }
-    this.groupMembers.set(memberList);
+    else{
+      this.leaveRoom();
+      alert("Room Closed.");
     }
+  }
+      
 }
