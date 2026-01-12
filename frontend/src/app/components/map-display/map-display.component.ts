@@ -1,10 +1,11 @@
-import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA,ViewChild,ElementRef,signal,output} from '@angular/core';
+import { Component, OnInit, CUSTOM_ELEMENTS_SCHEMA,ViewChild,ElementRef,output} from '@angular/core';
 import { ToastController} from '@ionic/angular/standalone';
 import { GoogleMap,Polyline,LatLngBounds } from '@capacitor/google-maps';
 import { environment } from '../../../environments/environment';
 import {LocationService} from '../../services/location.service';
 import {TrackingService} from '../../services/tracking.service';
 import {AuthService} from '../../services/auth.service';
+import {GroupService} from '../../services/group.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as polyline from '@mapbox/polyline';
@@ -17,9 +18,10 @@ const mapKey = environment.mapsKey;
   schemas:[CUSTOM_ELEMENTS_SCHEMA],
   imports: [ CommonModule, FormsModule],
 })
-export class MapDisplayComponent  implements OnInit {
+export class MapDisplayComponent implements OnInit {
 
-  private markerIds: string[] = [];
+  private markerIds: string[] = []; // for the current user's marker
+  private friendMarkers: Map<string, string> = new Map();
   private circleId: string | null = null;
   private routePolylineIds: string[]=[]; // Track Route Lines
   private circleUpdateLock = false;
@@ -28,12 +30,14 @@ export class MapDisplayComponent  implements OnInit {
 
   // tells userhome location of pin
   pinDropped = output<{lat: number, lng: number}>();
-  
-  // Injections
-  constructor(private toastController:ToastController,private locationService:LocationService) { }
-  // services to use in map
-  private trackingService = inject(TrackingService);
-  private authService = inject(AuthService);
+
+  // injects toastController, used when location services is denied
+  constructor(
+    private toastController:ToastController,
+    private locationService:LocationService,
+    private trackingService:TrackingService,
+    private authService:AuthService,
+    private groupService:GroupService) { }
 
   private lastSave = 0;
   private readonly SAVE_INTERVAL = 10000 // 10 secs
@@ -93,6 +97,7 @@ export class MapDisplayComponent  implements OnInit {
         await this.newMap.enableCurrentLocation(true);
 
         // shows LIVE location as you move
+        const userId = await this.authService.getUserId();
         await this.locationService.watchPosition(async (pos) => {
           if(pos && this.newMap){
             this.newMap.setCamera({
@@ -105,9 +110,9 @@ export class MapDisplayComponent  implements OnInit {
             // Only update if more than 5 seconds have passed
             const currentTime = Date.now();
             if (currentTime - this.lastSave > this.SAVE_INTERVAL) {
-              const userId = await this.authService.getUserId();
+              const groupId = this.groupService.groupCode();
               if (userId) {
-                this.trackingService.saveLocationToFirebase(userId, this.sessionId, pos);
+                this.trackingService.saveLocationToFirebase(userId, pos, groupId);
                 this.lastSave = currentTime;
               }
             }
@@ -116,7 +121,10 @@ export class MapDisplayComponent  implements OnInit {
         // toggles loading spinner
         this.mapReady.emit(true);
 
-
+        // Remove location when disconnected
+        if (userId) {
+          this.trackingService.cutLocationOnDisconnect(userId)
+        }
       } catch (err:any){
           console.error("Map initilization failed:",err);
           const errMsg = err?.message || 'Failed to load map. Please allow location services.';
@@ -250,4 +258,54 @@ export class MapDisplayComponent  implements OnInit {
         this.circleUpdateLock=false;
       }
     }
+
+   async updateMemberMarkers(members: any) {
+     if (!this.newMap) return; // return if map doesn't exist
+
+     const userId = await this.authService.getUserId();
+     const markerConfigs: any[] = [];
+     const membersInSync = Object.keys(members);
+
+     for (const uid of membersInSync) {
+       if (uid == userId) continue;
+
+       const {lat, lng} = members[uid];
+
+       // Marker exists, move it
+       if (this.friendMarkers.has(uid)) {
+         await this.newMap.removeMarkers([this.friendMarkers.get(uid)!]);
+       }
+
+       const markerId = await this.newMap.addMarker({
+          coordinate: { lat, lng },
+          title: 'Friend',
+          // iconUrl: '', // optional path to image instead of pin
+        });
+
+        this.friendMarkers.set(uid, markerId);
+     }
+
+   for (const [uid, markerId] of this.friendMarkers.entries()) {
+     if (!members[uid]) {
+       await this.newMap.removeMarkers([markerId]);
+       this.friendMarkers.delete(uid);
+     }
+   }
+ }
+
+  async clearAllFriendMarkers() {
+    if (!this.newMap) return;
+
+    // get stored marker IDs
+    const markerIds = Array.from(this.friendMarkers.values());
+
+    // remove all of the markers from the map
+    if (markerIds.length > 0) {
+      await this.newMap.removeMarkers(markerIds);
+    }
+
+    // clear internal registry
+    this.friendMarkers.clear();
+    console.log("All friend markers cleared from map.");
+  }
 }
