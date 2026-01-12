@@ -239,7 +239,7 @@ export class UserhomePage implements OnInit {
     }
 
     this.endGroupListener();
-
+    this.mapComponent.ngOnDestroy();
     this.currentView.set('selection');
     this.displayMainCard.set(true);
   }
@@ -257,6 +257,7 @@ export class UserhomePage implements OnInit {
 
     if (this.mapComponent) {
       await this.mapComponent.clearAllFriendMarkers();
+      await this.mapComponent.clearMap();
     }
 
     this.endGroupListener();

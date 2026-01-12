@@ -51,7 +51,7 @@ export class MapDisplayComponent implements OnInit {
   }
 
   async ngOnDestroy(){
-      if (this.newMap){await this.newMap.destroy();}
+      // if (this.newMap){await this.newMap.destroy();}
       if (this.routePolylineIds.length > 0){
         await this.newMap.removePolylines(this.routePolylineIds);
       }
@@ -59,7 +59,16 @@ export class MapDisplayComponent implements OnInit {
       this.circleId = null;
       await this.locationService.stopWatching();
   }
-
+  async clearMap(){
+    if (this.routePolylineIds.length > 0){
+        await this.newMap.removePolylines(this.routePolylineIds);
+      }
+    if (this.circleId){await this.newMap.removeCircles([this.circleId])};
+    await this.locationService.stopWatching();
+    if (this.pinDropped){
+      await this.newMap.removeMarker(this.markerIds[0]);
+    }
+  }
 
   @ViewChild('mapElement') mapRef!: ElementRef<HTMLElement>;
   newMap!: GoogleMap;
