@@ -1,8 +1,8 @@
-import { Component, OnInit, signal,model,ViewChild,Renderer2, ElementRef,OnDestroy } from '@angular/core';
+import { Component, OnInit, signal,model,ViewChild,Renderer2, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle,IonLabel,IonFooter} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,IonButtons,IonToolbar,IonToggle,IonLabel,IonFooter} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addCircleOutline, peopleOutline, arrowBack,warningOutline} from 'ionicons/icons';
 
@@ -38,7 +38,7 @@ export class UserhomePage implements OnInit {
   lastPin: {lat: number,lng:number} | null = null;
 
   mapReady = signal(false);
-
+  private routeWatcherId?: string | null = null;
   // holds all toggles for each factor
   speedToggled:boolean = false;
   curveToggled:boolean = false;
@@ -53,26 +53,9 @@ export class UserhomePage implements OnInit {
   // holds data for unsubscribeFromGroup method
   private unsubscribeFromGroup?: () => void;
 
-  // holds value for circle drag slider
-  sliderPercent:number = 1000;
-
   // live time 
   currentTime = signal<string>('');
   private timer: any;
-
-  onIonChange(event:RangeCustomEvent){
-
-    const newRadius = event.detail.value as number;
-
-    this.sliderPercent = newRadius*10;
-
-    // checks if user placed a pin to update circle with pin
-    if(this.lastPin){
-      this.mapComponent.updateRideCircle(this.lastPin.lat,this.lastPin.lng,this.sliderPercent);
-    }
-
-    console.log(this.sliderPercent);
-  }
 
   // what the user will view changes the on screen "cards" 
   currentView = signal<'selection' | 'group' | 'create' | 'join' | 'start' |'tracking'|'end'|'lobby'>('selection');
@@ -84,6 +67,7 @@ export class UserhomePage implements OnInit {
   onMapReady(isReady:boolean){
     this.mapReady.set(isReady);
   }
+  
   constructor(private router:Router,
     private groupService: GroupService,
     private locationService: LocationService,
@@ -96,6 +80,11 @@ export class UserhomePage implements OnInit {
 
   ngOnDestroy() {
     if (this.timer) clearInterval(this.timer);
+    Keyboard.removeAllListeners();
+    if (this.routeWatcherId){
+      this.locationService.stopWatching();
+      this.routeWatcherId = null;
+    }
   }
   
   ngOnInit() {
@@ -126,7 +115,6 @@ export class UserhomePage implements OnInit {
   // send data to map component to create a pin with circle
   onPinDropped(coords: any){
     this.lastPin = coords;
-    this.mapComponent.updateRideCircle(coords.lat,coords.lng,this.sliderPercent);
     this.pinCheck.set(false);
   }
 
@@ -150,6 +138,7 @@ export class UserhomePage implements OnInit {
 
     // Start listener for new pins!
     this.startGroupListener();
+
     // Start onDisconnect event
     if (userId) {
       this.trackingService.removeOnDisconnect(this.groupCode, userId);
@@ -227,6 +216,7 @@ export class UserhomePage implements OnInit {
 
   // Card routes (what user can see)
   selectGroup(){this.currentView.set('group');}
+
   // Going back as a host in a group
   async goBackHost() {
     // Remove group from firebase and get rid of group code
@@ -236,13 +226,14 @@ export class UserhomePage implements OnInit {
 
     if (this.mapComponent) {
       await this.mapComponent.clearAllFriendMarkers();
+      await this.mapComponent.clearMap();
     }
 
     this.endGroupListener();
-    this.mapComponent.ngOnDestroy();
     this.currentView.set('selection');
     this.displayMainCard.set(true);
   }
+
   // Going back as a member of a group
   async goBackMember() {
     // Get relevant firebase data
@@ -275,6 +266,7 @@ export class UserhomePage implements OnInit {
   }
 
   joinGroup(){this.currentView.set('join');}
+
   async startSession(){
     // Disable ability to join group
     await this.trackingService.disableGroupJoin(this.groupService.groupCode());
@@ -282,50 +274,72 @@ export class UserhomePage implements OnInit {
     this.currentView.set('start');
     this.displayMainCard.set(true);
   }
-  async confirm(){
+
+  // Only used to MANAGE API CALLS remove for demo for smoother updates (reroute only)
+  private lastApiCallTime = 0;
+  private readonly API_COOLDOWN = 10000;  //10s
+  private readonly REROUTE_THRESHOLD = 0.8; //change to .1 for demo 
+
+  async confirm() {
 
     this.currentView.set('tracking');
     this.displayMainCard.set(false);
 
+    // Calls Server for routes
+    await this.fetchAndDrawRoute();
+
+    // Route progress and off-route detection come from MapDisplayComponent
+
+}
+
+  async fetchAndDrawRoute() {
+    // Update the timestamp so we track the call
+    this.lastApiCallTime = Date.now();
+
     const position = this.locationService.currentPosition();
-    
-    if (!position) {
-      console.error('Current position is not available');
-      return;
-    }
-    
-    const lat:number = position.coords.latitude;
-    const lng:number = position.coords.longitude;
+    if (!position || !this.lastPin) return;
 
     const body = {
-        origin: [lat,lng],
-        destination: [this.lastPin?.lat,this.lastPin?.lng],
-        preferences: {
-          "curv_weight": this.curveToggled ? 2.0 : 1.0,
-          "speed_weight": this.speedToggled ? 2.0 : 1.0,
-          "traffic_weight": this.lightToggled ? 2.0 : 1.0,
-          "weather_weight": this.weatherToggled ? 2.0 : 1.0
-        }
+      origin: [position.coords.latitude, position.coords.longitude],
+      destination: [this.lastPin.lat, this.lastPin.lng],
+      preferences: {
+        "curv_weight": this.curveToggled ? 2.0 : 1.0,
+        "speed_weight": this.speedToggled ? 2.0 : 1.0,
+        "traffic_weight": this.lightToggled ? 2.0 : 1.0,
+        "weather_weight": this.weatherToggled ? 2.0 : 1.0
+      }
     };
-    
-    // request to backend server
     try {
-
-      const response = await fetch('http://10.0.2.2:8000/analyze-route',{
+      const response = await fetch('http://10.0.2.2:8000/analyze-route', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-
       const data = await response.json();
-      
-      
-      this.mapComponent.displayRoutes(data);
+      await this.mapComponent.displayRoutes(data);
 
-    } catch (err){
-      console.error('Could not connect to backend', err);
+      // Reset last API call time so we don't immediately reroute after a fresh route
+      this.lastApiCallTime = Date.now();
+    } catch (err) {
+      console.error('Backend connection failed.', err);
     }
   }
+
+  // Called from template when MapDisplayComponent emits distance updates
+  async onDistanceToLine(distanceToLine: number) {
+    const now = Date.now();
+
+    if (distanceToLine > this.REROUTE_THRESHOLD) {
+      if (now - this.lastApiCallTime > this.API_COOLDOWN) {
+        console.warn('Off route detected (via map). Triggering Reroute.');
+        this.lastApiCallTime = now;
+        await this.fetchAndDrawRoute();
+      } else {
+        console.log('Off route, but waiting for API cooldown...');
+      }
+    }
+  }
+
   endOptions(){this.currentView.set('end');}
 
   groupJoined(){

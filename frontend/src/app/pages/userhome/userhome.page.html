@@ -10,7 +10,8 @@
   <app-map-display
     #mapComp
     (mapReady)="onMapReady($event)"
-    (pinDropped)="onPinDropped($event)">
+    (pinDropped)="onPinDropped($event)"
+    (distanceToLine)="onDistanceToLine($event)">
   </app-map-display>
   <app-menu-screen></app-menu-screen>
 
@@ -160,6 +161,7 @@
           </ion-toolbar>
         </ion-card-header>
         <ion-grid>
+          <br>
           <ion-row>
             <ion-col class="ion-text-left">
               <ion-toggle [(ngModel)]="curveToggled">Less Curves:</ion-toggle>
@@ -179,16 +181,9 @@
           <ion-row>
           </ion-row>
           <ion-row>
-            <ion-col size="10" class="ion-text-left">
-              <ion-range
-                  [min]="100"
-                  [max]="500"
-                  aria-label="Range with ionChange"
-                  (ionInput)="onIonChange($event)"
-                  labelPlacement="start" label="Circle Radius:">
-              </ion-range>
-            </ion-col>
+          
           </ion-row>
+          <br>
           <ion-row>
             <ion-col class="ion-text-center">
               <ion-button [disabled]="pinCheck()" id="startButton" (click)="confirm()">Confirm Ride</ion-button>

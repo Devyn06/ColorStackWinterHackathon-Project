@@ -45,6 +45,10 @@ export class LocationService {
     if (!hasPermission){
       return null;
     }
+    // condition to hold only one live watch
+    if (this.activeWatchId) {
+      await this.stopWatching();
+    }
     this.activeWatchId = await Geolocation.watchPosition(
       {enableHighAccuracy:true,timeout:5000},
       (position)=>{

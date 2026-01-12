@@ -20,16 +20,22 @@ const mapKey = environment.mapsKey;
 })
 export class MapDisplayComponent implements OnInit {
 
+  private currentRoutePoints: { lat: number, lng: number }[] = [];
+  private activeMainPolyline: any = null; // To store the primary blue route config
+
   private markerIds: string[] = []; // for the current user's marker
   private friendMarkers: Map<string, string> = new Map();
-  private circleId: string | null = null;
   private routePolylineIds: string[]=[]; // Track Route Lines
-  private circleUpdateLock = false;
+  private cameraWatcherId: string | null = null; 
+
   // output values sent to userhome page
   mapReady = output<boolean>();
 
   // tells userhome location of pin
   pinDropped = output<{lat: number, lng: number}>();
+
+  // emits the current minimum distance from user to route when updated
+  distanceToLine = output<number>();
 
   // injects toastController, used when location services is denied
   constructor(
@@ -44,6 +50,13 @@ export class MapDisplayComponent implements OnInit {
 
   private sessionId = "ERR";
 
+  // Distance in KM after which the primary polyline should be trimmed only used when immediate_trim = false
+  private readonly TRIM_DISTANCE_KM = 0.001; // 1 m
+  // When true, trim as soon as user advances
+  private readonly IMMEDIATE_TRIM = true;
+  // Tracks how far along the original route we've trimmed already
+  private lastTrimDistanceKm = 0;
+
   //life cycle hooks
   ngOnInit() {}
   async ngAfterViewInit(){
@@ -55,19 +68,19 @@ export class MapDisplayComponent implements OnInit {
       if (this.routePolylineIds.length > 0){
         await this.newMap.removePolylines(this.routePolylineIds);
       }
-      if (this.circleId){await this.newMap.removeCircles([this.circleId])}; 
-      this.circleId = null;
       await this.locationService.stopWatching();
   }
+
   async clearMap(){
     if (this.routePolylineIds.length > 0){
         await this.newMap.removePolylines(this.routePolylineIds);
-      }
-    if (this.circleId){await this.newMap.removeCircles([this.circleId])};
-    await this.locationService.stopWatching();
-    if (this.pinDropped){
-      await this.newMap.removeMarker(this.markerIds[0]);
+        this.routePolylineIds = [];
     }
+
+    // Clear route tracking data
+    this.currentRoutePoints = []; 
+    this.activeMainPolyline = null; 
+    await this.locationService.stopWatching();
   }
 
   @ViewChild('mapElement') mapRef!: ElementRef<HTMLElement>;
@@ -107,7 +120,7 @@ export class MapDisplayComponent implements OnInit {
 
         // shows LIVE location as you move
         const userId = await this.authService.getUserId();
-        await this.locationService.watchPosition(async (pos) => {
+        this.cameraWatcherId = await this.locationService.watchPosition(async (pos) => {
           if(pos && this.newMap){
             this.newMap.setCamera({
               coordinate:{
@@ -116,6 +129,7 @@ export class MapDisplayComponent implements OnInit {
               },
               animate:true
             });
+
             // Only update if more than 5 seconds have passed
             const currentTime = Date.now();
             if (currentTime - this.lastSave > this.SAVE_INTERVAL) {
@@ -124,6 +138,15 @@ export class MapDisplayComponent implements OnInit {
                 this.trackingService.saveLocationToFirebase(userId, pos, groupId);
                 this.lastSave = currentTime;
               }
+            }
+
+            // Also update route progress here so map component controls trimming and emits distance
+            try {
+              if (this.currentRoutePoints.length >= 2) {
+                await this.updateRouteProgress(pos.coords.latitude, pos.coords.longitude);
+              }
+            } catch (err) {
+              console.error('Error updating route progress from camera watcher:', err);
             }
           }
         });
@@ -143,9 +166,10 @@ export class MapDisplayComponent implements OnInit {
       }
     }
 
-
     async displayRoutes(routes:any[]){
+      // checks for previous routes and if map is loaded
       if (!this.newMap || !routes || routes.length == 0) return;
+
       if (this.routePolylineIds.length > 0){
         await this.newMap.removePolylines(this.routePolylineIds);
         this.routePolylineIds = [];
@@ -157,33 +181,37 @@ export class MapDisplayComponent implements OnInit {
 
        
       routes.forEach((route,index) =>{
-      
         const decodedPath = polyline.decode(route.polyline);
-
         const points = decodedPath.map( point => ({
           lat: point[0],
           lng: point[1]
         }));
-
+        // Store the primary route for tracking updates
+        if(index === 0){
+          this.currentRoutePoints = [...points];
+          this.activeMainPolyline = {
+            strokeColor: '#3880ff',
+            strokeWeight: 6,
+            strokeOpacity: 1.0,
+            zIndex: 10
+          };
+        }
         allPoints.push(...points);
 
-        // First route is blue rest are gray
-        const polyConfig:any = ({
+        // Route config : Primary route is blue rest are red
+        const polyConfig = {
           path: points,
-          strokeColor: index === 0 ? '#3880ff' : '#8e8e93',
+          strokeColor: index === 0 ? '#3880ff' : '#ff0000',
           strokeWeight: index === 0 ? 6 : 4,
           strokeOpacity: index === 0 ? 1.0 : 0.5,
-          zIndex: index === 0 ? 10 : 1 // best routes stays on top
-        });
-
+          zIndex: index === 0 ? 10 : 1
+        };
         polylinesConfig.push(polyConfig);
       });
 
       this.routePolylineIds = await this.newMap.addPolylines(polylinesConfig);
-      
       // re-centers to fit all routes
       await this.focusRoutes(allPoints);
-
     }
 
     // creates bounds for re centering view
@@ -191,16 +219,145 @@ export class MapDisplayComponent implements OnInit {
       
       if (points.length === 0) return;
       
-      // filters points
+      // filters coordinate points
       const lats = points.map(p=>p.lat);
       const lngs = points.map(p=>p.lng);
       
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+
+      // adds padding so route doesnt fill whole screen
+      const latPadding = (maxLat - minLat) * 0.2;
+      const lngPadding = (maxLng - minLng) * 0.2;
+
       const bounds : LatLngBounds = {
-        southwest:  {lat: Math.min(...lats), lng: Math.min(...lngs)},
-        northeast: {lat: Math.max(...lats), lng: Math.max(...lngs)}
+        southwest:  {lat: minLat-latPadding, lng: minLng - lngPadding},
+        northeast: {lat: maxLat + latPadding, lng: maxLng + lngPadding}
       }as any;
 
       await this.newMap.fitBounds(bounds);
+    }
+
+    // Updates live Primary route progress
+    async updateRouteProgress(uLat: number, uLng: number): Promise<number> {
+      if (this.currentRoutePoints.length < 2) return 0;
+
+      // Use segment projection to get a precise closest point and distance along route
+      const closest = this.getClosestPointOnRoute(uLat, uLng);
+      const minDistance = closest.distanceKm;
+      const distanceAlong = closest.distanceAlongKm;
+      const segIndex = closest.segmentIndex;
+      const projPoint = { lat: closest.lat, lng: closest.lng };
+
+      // Small on-route threshold (20 m); separating this from reroute threshold
+      const ON_ROUTE_THRESHOLD_KM = 0.02;
+
+      if (minDistance < ON_ROUTE_THRESHOLD_KM) {
+        // If we've progressed enough since last trim OR immediate trim is enabled, trim the start
+        if (segIndex >= 0 && (this.IMMEDIATE_TRIM || (distanceAlong - this.lastTrimDistanceKm >= this.TRIM_DISTANCE_KM))) {
+          try {
+            // Build new route starting with the precise projected point
+            const remaining = this.currentRoutePoints.slice(segIndex + 1);
+            this.currentRoutePoints = [projPoint, ...remaining];
+
+            this.lastTrimDistanceKm = distanceAlong;
+
+            // Update the visible polyline on the map
+            if (this.routePolylineIds.length > 0) {
+              await this.newMap.removePolylines([this.routePolylineIds[0]]);
+
+              const newId = await this.newMap.addPolylines([{
+                ...this.activeMainPolyline,
+                path: this.currentRoutePoints
+              }]);
+
+              this.routePolylineIds[0] = newId[0];
+            }
+          } catch (error) {
+            console.error('Failed to update route polyline:', error);
+          }
+        }
+      }
+
+      // Emit the most recent distance to parent components
+      try { this.distanceToLine.emit(minDistance); } catch (err) {
+        console.warn('Distance emit failed:', err);
+      }
+
+      return minDistance;
+    }
+
+    // calculates distance to update routed polyline
+    private getHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+      const R = 6371; // Earth's radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c; // Distance in KM
+    }
+
+    // (Helper to get closest point on route) Projects a point onto a segment and returns the projected point and fraction t (0..1) 
+    private projectPointToSegment(uLat: number, uLng: number, a: {lat:number,lng:number}, b: {lat:number,lng:number}){
+      // Treat lat as y and lng as x for small-distance planar projection
+      const ax = a.lng, ay = a.lat;
+      const bx = b.lng, by = b.lat;
+      const px = uLng, py = uLat;
+
+      const vx = bx - ax, vy = by - ay;
+      const wx = px - ax, wy = py - ay;
+      const vlen2 = vx * vx + vy * vy;
+      let t = 0;
+      if (vlen2 > 0) {
+        t = (wx * vx + wy * vy) / vlen2;
+        t = Math.max(0, Math.min(1, t));
+      }
+
+      const projX = ax + t * vx;
+      const projY = ay + t * vy;
+      const distKm = this.getHaversineDistance(py, px, projY, projX);
+
+      return { lat: projY, lng: projX, t, distKm };
+    }
+
+    // Find closest projected point on route, returns distance to route and distance along route
+    private getClosestPointOnRoute(uLat: number, uLng: number){
+      let best = {
+        distanceKm: Infinity,
+        lat: 0,
+        lng: 0,
+        distanceAlongKm: 0,
+        segmentIndex: -1,
+        t: 0
+      };
+
+      // cumulative distance from route start to beginning of current segment
+      let cumulative = 0;
+      for (let i = 0; i < this.currentRoutePoints.length - 1; i++){
+        const a = this.currentRoutePoints[i];
+        const b = this.currentRoutePoints[i + 1];
+        const segLen = this.getHaversineDistance(a.lat, a.lng, b.lat, b.lng);
+
+        const proj = this.projectPointToSegment(uLat, uLng, a, b);
+        const distanceAlong = cumulative + segLen * proj.t;
+
+        if (proj.distKm < best.distanceKm){
+          best = {
+            distanceKm: proj.distKm,
+            lat: proj.lat,
+            lng: proj.lng,
+            distanceAlongKm: distanceAlong,
+            segmentIndex: i,
+            t: proj.t
+          };
+        }
+        cumulative += segLen;
+      }
+      return best;
     }
 
     private async showErrorToast(message: string){
@@ -231,41 +388,6 @@ export class MapDisplayComponent implements OnInit {
       this.markerIds.push(id);
       // updates lat and lng to userHome
       this.pinDropped.emit({lat:latitude,lng:longitude});
-    }
-
-    // updates circle 
-
-    async updateRideCircle(lat:number,lng:number,radius:number){
-      // condition to delete circle if a circle exists
-      if(this.circleUpdateLock){return;}
-      this.circleUpdateLock = true;
-
-      try{
-        if(this.circleId){
-          await this.newMap.removeCircles([this.circleId]);
-          this.circleId=null;
-        }
-        //creates a new circle
-        const circleOptions = {
-          center: {lat, lng},
-          radius: radius,
-          fillColor: '#3880ff',
-          fillOpacity: 0.2,
-          strokeColor: '#3880ff',
-          strokeWeight: 2,
-          clickable: false
-        };
-        
-        const result = await this.newMap.addCircles([circleOptions]);
-        
-        // circle id is stored to update or delete later
-        this.circleId = result[0];
-      
-      } 
-      // prevents deadlock
-      finally{
-        this.circleUpdateLock=false;
-      }
     }
 
    async updateMemberMarkers(members: any) {
