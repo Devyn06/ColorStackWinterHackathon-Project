@@ -4,5 +4,13 @@
 	"webDir": "www",
 	"android": {
 		"path": "../android"
+	},
+	"plugins": {
+		"Keyboard": {
+			"resize": "body"
+		},
+		"CapacitorHttp": {
+			"enabled": true
+		}
 	}
 }

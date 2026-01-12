@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pipeline import analyze_routes, RouteRequest
 
-# Initialize FastAPI app with uvicorn pipeline:app --reload
+# Initialize FastAPI app with uvicorn app:app --reload
 app = FastAPI()
 
 @app.get("/")
