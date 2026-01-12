@@ -42,12 +42,22 @@ ion-spinner {
 
   ion-card {
     // This restores clicking for the actual card and buttons
-    height: 200px;
+    height: var(--height,200px);
     pointer-events: auto; 
     margin: 0;
     border-radius: 30px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    background: var(--ion-card-background, rgb(255, 255, 255)); // The card itself should be solid
+    background: var(--ion-card-background, rgb(255, 255, 255)); // The card itself should be solid'
+
+    .name-grid{
+      overflow-y: auto;
+    }
+
+
+
+
+    
+
     
     ion-card-header {
       height: 40px;

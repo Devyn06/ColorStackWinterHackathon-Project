@@ -1,8 +1,8 @@
-import { Component, OnInit, signal,model,ViewChild } from '@angular/core';
+import { Component, OnInit, signal,model,ViewChild,inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle,IonLabel} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle,IonLabel,IonItem} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addCircleOutline, peopleOutline, arrowBack,warningOutline} from 'ionicons/icons';
 // API keys
@@ -15,6 +15,18 @@ import { GroupService } from '../../services/group.service';
 import {LocationService} from '../../services/location.service';
 import {TrackingService} from '../../services/tracking.service';
 import {AuthService} from '../../services/auth.service';
+import {
+  Database,
+  ref,
+  push,
+  set,
+  serverTimestamp,
+  remove,
+  get,
+  child,
+  DataSnapshot,
+  onValue,
+  onDisconnect } from '@angular/fire/database'; // for firebase
 // gets API key from file
 const mapKey = environment.mapsKey;
 
@@ -24,7 +36,7 @@ const mapKey = environment.mapsKey;
   styleUrls: ['./userhome.page.scss'],
   standalone: true,
   imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,
-    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel]
+    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel,IonItem]
 })
 export class UserhomePage implements OnInit {
   //allows us to use functions defined in map component
@@ -61,11 +73,12 @@ export class UserhomePage implements OnInit {
     console.log(this.sliderPercent);
   }
   // what the user will view changes the on screen "cards"
-  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'start'>('selection');
+  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'waitroom' | 'start'>('selection');
 
   // holds user inputted code "writeable signal" 2 way binding
   userJoinCode = model('');
 
+  groupMembers = signal<string[]>([]);
   //receieves signal from map component
   onMapReady(isReady:boolean){
     this.mapReady.set(isReady);
@@ -115,6 +128,7 @@ export class UserhomePage implements OnInit {
 
     //changes users view
     this.currentView.set('create');
+    document.documentElement.style.setProperty('--height', '600px');
   }
 
   async attemptJoin() {
@@ -160,7 +174,9 @@ export class UserhomePage implements OnInit {
     }
 
     // If valid, move to the next area! TBD
-    // this.currentView.set("SOMETHING");
+    this.userJoinCode.set('');
+    this.currentView.set("waitroom");
+    document.documentElement.style.setProperty('--height', '600px');
   }
 
   startGroupListener() {
@@ -173,6 +189,7 @@ export class UserhomePage implements OnInit {
       if (this.mapComponent && members) {
         this.mapComponent.updateMemberMarkers(members);
         }
+        this.getGroupMembers(members);
     });
   }
 
@@ -188,7 +205,7 @@ export class UserhomePage implements OnInit {
   // Going back as a host in a group
   async goBackHost() {
     // Remove group from firebase and get rid of group code
-    await this.trackingService.removeGroupFromFirebase(this.groupService.groupCode());
+    //await this.trackingService.removeGroupFromFirebase(this.groupService.groupCode());
     this.groupService.groupCode.set(null);
     this.groupCode = '';
 
@@ -199,6 +216,7 @@ export class UserhomePage implements OnInit {
     this.endGroupListener();
 
     this.currentView.set('selection');
+    document.documentElement.style.setProperty('--height', '200px');
   }
   // Going back as a member of a group
   async goBackMember() {
@@ -223,10 +241,12 @@ export class UserhomePage implements OnInit {
 
   async goBack(){
     if (this.mapComponent) {
+      this.userJoinCode.set('');
       await this.mapComponent.clearAllFriendMarkers();
     }
 
     this.currentView.set('selection');
+    document.documentElement.style.setProperty('--height', '200px');
   }
 
   joinGroup(){this.currentView.set('join');}
@@ -237,4 +257,37 @@ export class UserhomePage implements OnInit {
     // Change set screen
     this.currentView.set('start');
   }
+
+  async leaveRoom(){
+
+    const uid = this.authService.getUserId();
+    this.trackingService.removeUserFromGroup(uid || 'null',this.groupCode)
+    this.currentView.set('group');
+    document.documentElement.style.setProperty('--height', '200px');
+  }
+
+  private db = inject(Database);
+
+  async getGroupMembers(members: any) {
+    
+
+    const membersInSync = Object.keys(members);
+    console.log('members keys received:', membersInSync);
+    const dbRef = ref(this.db);
+    //this.groupMembers = [];
+    const memberList: string[] = [];
+
+
+    // Look specifically for the group and its joinable status
+    for(const Id of membersInSync){
+      const snapshot = await get(child(dbRef, `userDB/${Id}`));
+
+      if (snapshot.exists()) {
+        const member = snapshot.val();
+        memberList.push(member.firstName + ' ' + member.lastName);
+        console.log('member is: ' + member.firstName); // Returns major info of the group
+      }
+    }
+    this.groupMembers.set(memberList);
+    }
 }

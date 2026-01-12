@@ -1,3 +1,4 @@
+
 <ion-content [fullscreen]="true">
   <!-- shows loading screen until map is ready -->
   @if (!mapReady()) {
@@ -105,6 +106,17 @@
         <ion-card-content>
           <ion-grid>
             <ion-row>
+              <ion-grid class="name-grid">
+                @for (mem of groupMembers(); track mem) {
+                  <ion-row>
+                        <ion-item>
+                          {{ mem }}
+                        </ion-item>
+                  </ion-row>
+                }
+              </ion-grid>
+            </ion-row>
+            <ion-row>
               <ion-col size="12" class="ion-text-center">
                 <h1 class="groupCodeDisplay">{{groupCode}} </h1>
               </ion-col>
@@ -141,6 +153,34 @@
                     placeholder="Enter Group Code:">
                   </ion-input>
                 </h1>
+              </ion-col>
+            </ion-row>
+          </ion-grid>
+        </ion-card-content>
+      }
+      <!-- holds card when user is in waitroom -->
+      @if (currentView() == 'waitroom'){
+        <ion-card-header>
+          <ion-toolbar color="transparent">
+            <ion-card-title>Waiting for Host to Start Session</ion-card-title>
+          </ion-toolbar>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-grid>
+            <ion-grid class="name-grid">
+              @for (mem of groupMembers(); track mem) {
+                <ion-row>
+                      <ion-item>
+                        {{ mem }}
+                      </ion-item>
+                </ion-row>
+              }
+            </ion-grid>
+            <ion-row>
+              <ion-col>
+                <ion-button color="danger" expand="block" (click)="leaveRoom()" shape="round" class="ion-margin-top">
+                  Leave Room
+                </ion-button>
               </ion-col>
             </ion-row>
           </ion-grid>
