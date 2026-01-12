@@ -1,8 +1,8 @@
-import { Component, OnInit, signal,model,ViewChild,Renderer2, ElementRef } from '@angular/core';
+import { Component, OnInit, signal,model,ViewChild,inject,Renderer2, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,IonButtons,IonToolbar,IonToggle,IonLabel,IonFooter} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,IonButtons,IonToolbar,IonToggle,IonLabel,IonItem,IonFooter} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addCircleOutline, peopleOutline, arrowBack,warningOutline} from 'ionicons/icons';
 
@@ -18,6 +18,18 @@ import { GroupService } from '../../services/group.service';
 import {LocationService} from '../../services/location.service';
 import {TrackingService} from '../../services/tracking.service';
 import {AuthService} from '../../services/auth.service';
+import {
+  Database,
+  ref,
+  push,
+  set,
+  serverTimestamp,
+  remove,
+  get,
+  child,
+  DataSnapshot,
+  onValue,
+  onDisconnect } from '@angular/fire/database'; // for firebase
 // gets API key from file
 const mapKey = environment.mapsKey;
 
@@ -27,7 +39,7 @@ const mapKey = environment.mapsKey;
   styleUrls: ['./userhome.page.scss'],
   standalone: true,
   imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,
-    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel,IonFooter]
+    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel,IonFooter,IonItem]
 })
 export class UserhomePage implements OnInit {
 
@@ -58,11 +70,12 @@ export class UserhomePage implements OnInit {
   private timer: any;
 
   // what the user will view changes the on screen "cards" 
-  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'start' |'tracking'|'end'|'lobby'>('selection');
+  currentView = signal<'selection' | 'group' | 'create' | 'join' |'waitroom'| 'start' |'tracking'|'end'|'lobby'>('selection');
   
   // User Codes
   userJoinCode = model('');
 
+  groupMembers = signal<string[]>([]);
   //receieves signal from map component
   onMapReady(isReady:boolean){
     this.mapReady.set(isReady);
@@ -147,6 +160,7 @@ export class UserhomePage implements OnInit {
 
     //changes users view
     this.currentView.set('create');
+    document.documentElement.style.setProperty('--height', '600px');
   }
   async attemptJoin() {
     const code = this.userJoinCode().toUpperCase().trim(); // Clean the input up
@@ -160,7 +174,7 @@ export class UserhomePage implements OnInit {
 
     // No group found
     if (!groupData) {
-      alert("Group not found. Please check the code.");
+      alert("Group not found. Please check the Group Code.");
       return;
     }
     // Group is closed (unjoinable)
@@ -191,7 +205,9 @@ export class UserhomePage implements OnInit {
     }
 
     // If valid, move to the next area! TBD
-    // this.currentView.set("SOMETHING");
+    this.userJoinCode.set('');
+    this.currentView.set("waitroom");
+    document.documentElement.style.setProperty('--height', '600px');
   }
 
   startGroupListener() {
@@ -204,6 +220,7 @@ export class UserhomePage implements OnInit {
       if (this.mapComponent && members) {
         this.mapComponent.updateMemberMarkers(members);
         }
+        this.getGroupMembers(members);
     });
   }
 
@@ -231,6 +248,7 @@ export class UserhomePage implements OnInit {
 
     this.endGroupListener();
     this.currentView.set('selection');
+    document.documentElement.style.setProperty('--height', '200px');
     this.displayMainCard.set(true);
   }
 
@@ -259,10 +277,12 @@ export class UserhomePage implements OnInit {
 
   async goBack(){
     if (this.mapComponent) {
+      this.userJoinCode.set('');
       await this.mapComponent.clearAllFriendMarkers();
     }
     this.displayMainCard.set(true);
     this.currentView.set('selection');
+    document.documentElement.style.setProperty('--height', '200px');
   }
 
   joinGroup(){this.currentView.set('join');}
@@ -290,7 +310,7 @@ export class UserhomePage implements OnInit {
 
     // Route progress and off-route detection come from MapDisplayComponent
 
-}
+  }
 
   async fetchAndDrawRoute() {
     // Update the timestamp so we track the call
@@ -354,4 +374,47 @@ export class UserhomePage implements OnInit {
       hour12: true 
     }));
   }
+
+  async leaveRoom(){
+
+    const uid = this.authService.getUserId();
+    this.trackingService.removeUserFromGroup(uid || 'null',this.groupCode)
+    this.currentView.set('group');
+    this.groupService.groupCode.set(null);
+    this.groupCode ='';
+    document.documentElement.style.setProperty('--height', '200px');
+  }
+
+  private db = inject(Database);
+
+  async getGroupMembers(members: any) {
+    
+
+    const membersInSync = Object.keys(members);
+    console.log('members keys received:', membersInSync);
+    const dbRef = ref(this.db);
+    const memberList: string[] = [];
+
+  
+  const snapshot = await get(child(dbRef, `groups/${this.groupCode}/host`));
+  //Check if host is still in room an if not kicks user
+    if (snapshot.exists()) {
+      //Finds names of all users in room
+      for(const Id of membersInSync){
+        const snapshot = await get(child(dbRef, `userDB/${Id}`));
+
+        if (snapshot.exists()) {
+          const member = snapshot.val();
+          memberList.push(member.firstName + ' ' + member.lastName);
+          console.log('member is: ' + member.firstName); // Returns major info of the group
+        }
+      }
+      this.groupMembers.set(memberList);
+    }
+    else{
+      this.leaveRoom();
+      alert("Room Closed.");
+    }
+  }
+      
 }
