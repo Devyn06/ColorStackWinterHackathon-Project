@@ -8,10 +8,13 @@ const config: CapacitorConfig = {
     path: '../android' 
   },
   plugins: {
-  Keyboard: {
-    resize: KeyboardResize.Body, 
-  }
-}
+    Keyboard: {
+      resize: KeyboardResize.Body, 
+    },
+    CapacitorHttp:{
+      enabled:true,
+    },
+  },
 };
 
 export default config;

@@ -1,12 +1,13 @@
 import { Component, inject, OnInit, CUSTOM_ELEMENTS_SCHEMA,ViewChild,ElementRef,signal,output} from '@angular/core';
 import { ToastController} from '@ionic/angular/standalone';
-import { GoogleMap } from '@capacitor/google-maps';
+import { GoogleMap,Polyline,LatLngBounds } from '@capacitor/google-maps';
 import { environment } from '../../../environments/environment';
 import {LocationService} from '../../services/location.service';
 import {TrackingService} from '../../services/tracking.service';
 import {AuthService} from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import * as polyline from '@mapbox/polyline';
 // api key
 const mapKey = environment.mapsKey;
 @Component({
@@ -20,6 +21,7 @@ export class MapDisplayComponent  implements OnInit {
 
   private markerIds: string[] = [];
   private circleId: string | null = null;
+  private routePolylineIds: string[]=[]; // Track Route Lines
   private circleUpdateLock = false;
   // output values sent to userhome page
   mapReady = output<boolean>();
@@ -45,7 +47,10 @@ export class MapDisplayComponent  implements OnInit {
   }
 
   async ngOnDestroy(){
-      if (this.newMap){await this.newMap.destroy();} 
+      if (this.newMap){await this.newMap.destroy();}
+      if (this.routePolylineIds.length > 0){
+        await this.newMap.removePolylines(this.routePolylineIds);
+      }
       if (this.circleId){await this.newMap.removeCircles([this.circleId])}; 
       this.circleId = null;
       await this.locationService.stopWatching();
@@ -120,7 +125,67 @@ export class MapDisplayComponent  implements OnInit {
           this.mapReady.emit(false);
       }
     }
-    
+
+
+    async displayRoutes(routes:any[]){
+      if (!this.newMap || !routes || routes.length == 0) return;
+      if (this.routePolylineIds.length > 0){
+        await this.newMap.removePolylines(this.routePolylineIds);
+        this.routePolylineIds = [];
+      }
+
+      // stores configured polylines
+      const polylinesConfig: Polyline[] = [];
+      const allPoints: {lat:number; lng: number} []=[];
+
+       
+      routes.forEach((route,index) =>{
+      
+        const decodedPath = polyline.decode(route.polyline);
+
+        const points = decodedPath.map( point => ({
+          lat: point[0],
+          lng: point[1]
+        }));
+
+        allPoints.push(...points);
+
+        // First route is blue rest are gray
+        const polyConfig:any = ({
+          path: points,
+          strokeColor: index === 0 ? '#3880ff' : '#8e8e93',
+          strokeWeight: index === 0 ? 6 : 4,
+          strokeOpacity: index === 0 ? 1.0 : 0.5,
+          zIndex: index === 0 ? 10 : 1 // best routes stays on top
+        });
+
+        polylinesConfig.push(polyConfig);
+      });
+
+      this.routePolylineIds = await this.newMap.addPolylines(polylinesConfig);
+      
+      // re-centers to fit all routes
+      await this.focusRoutes(allPoints);
+
+    }
+
+    // creates bounds for re centering view
+    private async focusRoutes(points: { lat: number, lng: number}[]){
+      
+      if (points.length === 0) return;
+      
+      // filters points
+      const lats = points.map(p=>p.lat);
+      const lngs = points.map(p=>p.lng);
+      
+      const bounds : LatLngBounds = {
+        southwest:  {lat: Math.min(...lats), lng: Math.min(...lngs)},
+        northeast: {lat: Math.max(...lats), lng: Math.max(...lngs)}
+      }as any;
+
+      await this.newMap.fitBounds(bounds);
+    }
+
     private async showErrorToast(message: string){
       // creates message display for user with error message
       const toast = await this.toastController.create({

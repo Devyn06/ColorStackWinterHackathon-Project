@@ -137,6 +137,9 @@
                 <h1 class="joinDisplayCode">
                   <ion-input [(ngModel)]="userJoinCode" name="joinInput" placeholder="Enter Group Code:"></ion-input>
                 </h1>
+                <h2>
+                  <ion-button [disabled]="!userJoinCode()" (click)="groupJoined()">Join Group</ion-button>
+                </h2>
               </ion-col>
             </ion-row>
           </ion-grid>

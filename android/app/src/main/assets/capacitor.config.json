@@ -8,6 +8,9 @@
 	"plugins": {
 		"Keyboard": {
 			"resize": "body"
+		},
+		"CapacitorHttp": {
+			"enabled": true
 		}
 	}
 }

@@ -4,14 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
   IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle,IonLabel,IonFooter} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
+import {LocationService} from '../../services/location.service';
 import { addCircleOutline, peopleOutline, arrowBack,warningOutline} from 'ionicons/icons';
+
 // API keys
 import { environment } from '../../../environments/environment';
+
 // impor to display the map
 import { MapDisplayComponent } from '../../components/map-display/map-display.component';
 import { MenuScreenComponent } from '../../components/menu-screen/menu-screen.component';
 import { Keyboard } from '@capacitor/keyboard';
 import { Router} from '@angular/router';
+
 // gets API key from file
 const mapKey = environment.mapsKey;
 
@@ -64,7 +68,7 @@ export class UserhomePage implements OnInit {
   }
 
   // what the user will view changes the on screen "cards" 
-  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'start' |'tracking'|'end'>('selection');
+  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'start' |'tracking'|'end'|'lobby'>('selection');
   
   // User Codes
   groupCode = signal('');
@@ -76,7 +80,12 @@ export class UserhomePage implements OnInit {
   }
 
 
-  constructor(private router:Router,private renderer: Renderer2, private el: ElementRef) {
+  constructor(
+    private router:Router,
+    private renderer: Renderer2,
+    private el: ElementRef,
+    private locationService:LocationService) {
+
     addIcons({ addCircleOutline, peopleOutline,arrowBack,warningOutline});
   }
 
@@ -137,6 +146,53 @@ export class UserhomePage implements OnInit {
   goBack(){this.currentView.set('selection'); this.display.set(true);}
   joinGroup(){this.currentView.set('join');}
   startSession(){this.currentView.set('start'); this.display.set(true);}
-  confirm(){this.currentView.set('tracking'); this.display.set(false);}
+  async confirm(){
+
+    this.currentView.set('tracking');
+    this.display.set(false);
+
+    const position = this.locationService.currentPosition();
+    
+    if (!position) {
+      console.error('Current position is not available');
+      return;
+    }
+    
+    const lat:number = position.coords.latitude;
+    const lng:number = position.coords.longitude;
+
+    const body = {
+        origin: [lat,lng],
+        destination: [this.lastPin?.lat,this.lastPin?.lng],
+        preferences: {
+          "curv_weight": this.curveToggled ? 2.0 : 1.0,
+          "speed_weight": this.speedToggled ? 2.0 : 1.0,
+          "traffic_weight": this.lightToggled ? 2.0 : 1.0,
+          "weather_weight": this.weatherToggled ? 2.0 : 1.0
+        }
+    };
+    
+    // request to backend server
+    try {
+
+      const response = await fetch('http://10.0.2.2:8000/analyze-route',{
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+      
+      
+      this.mapComponent.displayRoutes(data);
+
+    } catch (err){
+      console.error('Could not connect to backend', err);
+    }
+  }
   endOptions(){this.currentView.set('end');}
+
+  groupJoined(){
+    this.display.set(false);
+  }
 }
