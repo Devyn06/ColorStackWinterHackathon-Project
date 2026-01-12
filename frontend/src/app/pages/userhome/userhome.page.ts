@@ -1,13 +1,8 @@
-import { Component, OnInit, signal,model,ViewChild,inject } from '@angular/core';
+import { Component, OnInit, signal,model,ViewChild,inject,Renderer2, ElementRef,OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle,IonLabel,IonItem} from '@ionic/angular/standalone';
-import { Component, OnInit, signal,model,ViewChild,Renderer2, ElementRef,OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle,IonLabel,IonFooter} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,RangeCustomEvent,IonButtons,IonToolbar,IonToggle,IonLabel,IonItem,IonFooter} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addCircleOutline, peopleOutline, arrowBack,warningOutline} from 'ionicons/icons';
 
@@ -44,8 +39,7 @@ const mapKey = environment.mapsKey;
   styleUrls: ['./userhome.page.scss'],
   standalone: true,
   imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,
-    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel,IonItem]
-    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel,IonFooter]
+    IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel,IonFooter,IonItem]
 })
 export class UserhomePage implements OnInit {
 
@@ -92,10 +86,8 @@ export class UserhomePage implements OnInit {
     console.log(this.sliderPercent);
   }
   // what the user will view changes the on screen "cards"
-  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'waitroom' | 'start'>('selection');
+  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'waitroom' | 'start' |'tracking'|'end'|'lobby'>('selection');
 
-  // what the user will view changes the on screen "cards" 
-  currentView = signal<'selection' | 'group' | 'create' | 'join' | 'start' |'tracking'|'end'|'lobby'>('selection');
   
   // User Codes
   userJoinCode = model('');
