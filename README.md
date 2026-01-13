@@ -78,4 +78,4 @@ pip install -r requirements.txt
  Interactive UI design (signals) + FE and BE connection, live rerouting, live trim polyline, Location services.
 
  # Demo video link
- https://youtu.be/bplrNkmVgw0
+ https://youtu.be/UsbScwzUs6c
