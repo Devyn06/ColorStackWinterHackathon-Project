@@ -143,7 +143,7 @@ export class MapDisplayComponent implements OnInit {
             // Also update route progress here so map component controls trimming and emits distance
             try {
               if (this.currentRoutePoints.length >= 2) {
-                await this.updateRouteProgress(pos.coords.latitude, pos.coords.longitude);
+                await this.updateRouteProgress(pos.coords.latitude, pos.coords.longitude, this.currentRoutePoints);
               }
             } catch (err) {
               console.error('Error updating route progress from camera watcher:', err);
@@ -166,7 +166,7 @@ export class MapDisplayComponent implements OnInit {
       }
     }
 
-    async displayRoutes(routes:any[]){
+    async displayRoutes(routes:any[], selectedIndex: number | null = null){
       // checks for previous routes and if map is loaded
       if (!this.newMap || !routes || routes.length == 0) return;
 
@@ -179,15 +179,19 @@ export class MapDisplayComponent implements OnInit {
       const polylinesConfig: Polyline[] = [];
       const allPoints: {lat:number; lng: number} []=[];
 
-       
       routes.forEach((route,index) =>{
         const decodedPath = polyline.decode(route.polyline);
         const points = decodedPath.map( point => ({
           lat: point[0],
           lng: point[1]
         }));
-        // Store the primary route for tracking updates
-        if(index === 0){
+
+        // Collect all points for combined view
+        allPoints.push(...points);
+
+        const isSelected = selectedIndex !== null && index === selectedIndex;
+        if (isSelected){
+          // set the selected route as the current route for tracking
           this.currentRoutePoints = [...points];
           this.activeMainPolyline = {
             strokeColor: '#3880ff',
@@ -196,26 +200,99 @@ export class MapDisplayComponent implements OnInit {
             zIndex: 10
           };
         }
-        allPoints.push(...points);
 
-        // Route config : Primary route is blue rest are red
+        // Route config : selected route is blue rest are red
         const polyConfig = {
           path: points,
-          strokeColor: index === 0 ? '#3880ff' : '#ff0000',
-          strokeWeight: index === 0 ? 6 : 4,
-          strokeOpacity: index === 0 ? 1.0 : 0.5,
-          zIndex: index === 0 ? 10 : 1
+          strokeColor: isSelected ? '#3880ff' : '#ff0000',
+          strokeWeight: isSelected ? 6 : 4,
+          strokeOpacity: isSelected ? 1.0 : 0.5,
+          zIndex: isSelected ? 10 : 1
         };
         polylinesConfig.push(polyConfig);
       });
 
       this.routePolylineIds = await this.newMap.addPolylines(polylinesConfig);
-      // re-centers to fit all routes
-      await this.focusRoutes(allPoints);
+
+      if (selectedIndex !== null){
+        const selectedPoints = polyline.decode(routes[selectedIndex].polyline).map(p => ({lat: p[0], lng: p[1]}));
+        await this.focusRoute(selectedPoints);
+      } else {
+        await this.focusRoute(allPoints);
+      }
     }
 
-    // creates bounds for re centering view
-    private async focusRoutes(points: { lat: number, lng: number}[]){
+    // Displays a single selected route (used when user selects a route from parent)
+    async displayRoute(route:any){
+      if (!this.newMap || !route) return;
+
+      if (this.routePolylineIds.length > 0){
+        await this.newMap.removePolylines(this.routePolylineIds);
+        this.routePolylineIds = [];
+      }
+
+      const decodedPath = polyline.decode(route.polyline);
+      const points = decodedPath.map( p => ({lat: p[0], lng: p[1]}));
+
+      // set selected route for tracking
+      this.currentRoutePoints = [...points];
+      this.activeMainPolyline = {
+        strokeColor: '#3880ff',
+        strokeWeight: 6,
+        strokeOpacity: 1.0,
+        zIndex: 10
+      };
+
+      const polyConfig = [{
+        path: points,
+        strokeColor: '#3880ff',
+        strokeWeight: 6,
+        strokeOpacity: 1.0,
+        zIndex: 10
+      }];
+
+      this.routePolylineIds = await this.newMap.addPolylines(polyConfig);
+      await this.focusRoute(points);
+    }
+
+    // Draw an encoded polyline string directly (used by group members when receiving selected lite route)
+    public async drawPolyline(encodedPath: string) {
+      if (!this.newMap || !encodedPath) return;
+
+      // Remove existing polylines
+      if (this.routePolylineIds.length > 0) {
+        await this.newMap.removePolylines(this.routePolylineIds);
+        this.routePolylineIds = [];
+      }
+
+      // Decode encoded polyline
+      const decoded = polyline.decode(encodedPath).map(p => ({ lat: p[0], lng: p[1] }));
+
+      // Set as current route points for progress tracking
+      this.currentRoutePoints = [...decoded];
+      this.activeMainPolyline = {
+        strokeColor: '#3880ff',
+        strokeWeight: 6,
+        strokeOpacity: 1.0,
+        zIndex: 10,
+        geodesic: true
+      };
+
+      const polyConfig = [{
+        path: decoded,
+        strokeColor: '#3880ff',
+        strokeWeight: 6,
+        strokeOpacity: 1.0,
+        zIndex: 10,
+        geodesic: true
+      }];
+
+      this.routePolylineIds = await this.newMap.addPolylines(polyConfig);
+      await this.focusRoute(decoded);
+    }
+
+    // creates bounds for re centering view for a single selected route or combined points
+    private async focusRoute(points: { lat: number, lng: number}[]){
       
       if (points.length === 0) return;
       
@@ -240,12 +317,13 @@ export class MapDisplayComponent implements OnInit {
       await this.newMap.fitBounds(bounds);
     }
 
-    // Updates live Primary route progress
-    async updateRouteProgress(uLat: number, uLng: number): Promise<number> {
-      if (this.currentRoutePoints.length < 2) return 0;
+    // Updates live selected route progress; accepts an explicit route polyline so we only operate on the selected route
+    async updateRouteProgress(uLat: number, uLng: number, routePoints?: {lat:number,lng:number}[]): Promise<number> {
+      const pts = routePoints && routePoints.length ? routePoints : this.currentRoutePoints;
+      if (!pts || pts.length < 2) return 0;
 
       // Use segment projection to get a precise closest point and distance along route
-      const closest = this.getClosestPointOnRoute(uLat, uLng);
+      const closest = this.getClosestPointOnRoute(uLat, uLng, pts);
       const minDistance = closest.distanceKm;
       const distanceAlong = closest.distanceAlongKm;
       const segIndex = closest.segmentIndex;
@@ -259,8 +337,11 @@ export class MapDisplayComponent implements OnInit {
         if (segIndex >= 0 && (this.IMMEDIATE_TRIM || (distanceAlong - this.lastTrimDistanceKm >= this.TRIM_DISTANCE_KM))) {
           try {
             // Build new route starting with the precise projected point
-            const remaining = this.currentRoutePoints.slice(segIndex + 1);
-            this.currentRoutePoints = [projPoint, ...remaining];
+            const remaining = pts.slice(segIndex + 1);
+            const newRoute = [projPoint, ...remaining];
+
+            // Update internal selected route representation
+            this.currentRoutePoints = newRoute;
 
             this.lastTrimDistanceKm = distanceAlong;
 
@@ -324,8 +405,10 @@ export class MapDisplayComponent implements OnInit {
       return { lat: projY, lng: projX, t, distKm };
     }
 
-    // Find closest projected point on route, returns distance to route and distance along route
-    private getClosestPointOnRoute(uLat: number, uLng: number){
+    // Find closest projected point on a provided route (or the currentRoutePoints if none provided), returns distance to route and distance along route
+    private getClosestPointOnRoute(uLat: number, uLng: number, routePoints?: {lat:number,lng:number}[]){
+      const points = routePoints && routePoints.length ? routePoints : this.currentRoutePoints;
+
       let best = {
         distanceKm: Infinity,
         lat: 0,
@@ -337,9 +420,9 @@ export class MapDisplayComponent implements OnInit {
 
       // cumulative distance from route start to beginning of current segment
       let cumulative = 0;
-      for (let i = 0; i < this.currentRoutePoints.length - 1; i++){
-        const a = this.currentRoutePoints[i];
-        const b = this.currentRoutePoints[i + 1];
+      for (let i = 0; i < points.length - 1; i++){
+        const a = points[i];
+        const b = points[i + 1];
         const segLen = this.getHaversineDistance(a.lat, a.lng, b.lat, b.lng);
 
         const proj = this.projectPointToSegment(uLat, uLng, a, b);

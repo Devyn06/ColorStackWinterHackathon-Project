@@ -2,7 +2,7 @@ import { Component, OnInit, signal,model,ViewChild,inject,Renderer2, ElementRef 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,IonButtons,IonToolbar,IonToggle,IonLabel,IonItem,IonFooter} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,IonButtons,IonToolbar,IonToggle,IonList,IonLabel,IonItem,IonFooter} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addCircleOutline, peopleOutline, arrowBack,warningOutline} from 'ionicons/icons';
 
@@ -38,7 +38,7 @@ const mapKey = environment.mapsKey;
   templateUrl: './userhome.page.html',
   styleUrls: ['./userhome.page.scss'],
   standalone: true,
-  imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,
+  imports: [IonContent, CommonModule, FormsModule,IonCardContent,IonRow,IonCol,IonButton,IonList,
     IonIcon,IonCard,IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonToggle, MapDisplayComponent,IonInput,IonButtons,IonToolbar,MenuScreenComponent,IonLabel,IonFooter,IonItem]
 })
 export class UserhomePage implements OnInit {
@@ -64,6 +64,7 @@ export class UserhomePage implements OnInit {
 
   // holds data for unsubscribeFromGroup method
   private unsubscribeFromGroup?: () => void;
+  private unsubscribeSelectedRoute?: () => void;
 
   // live time 
   currentTime = signal<string>('');
@@ -76,6 +77,10 @@ export class UserhomePage implements OnInit {
   userJoinCode = model('');
 
   groupMembers = signal<string[]>([]);
+  // routes fetched from server and selected index for UI
+  routes: any[] = [];
+  selectedRouteIndex: number | null = null;
+
   //receieves signal from map component
   onMapReady(isReady:boolean){
     this.mapReady.set(isReady);
@@ -215,20 +220,42 @@ export class UserhomePage implements OnInit {
     const code = this.groupService.groupCode();
     if (!code) return;
 
-    // Start listener loop
+    // Start member listener loop
     this.unsubscribeFromGroup = this.trackingService.listenToGroup(code, (members) => {
       if (this.mapComponent && members) {
         this.mapComponent.updateMemberMarkers(members);
+      }
+      this.getGroupMembers(members);
+    });
+
+    // Start listening for a selected route published by the host (expects a lite object with polyline)
+    this.unsubscribeSelectedRoute = this.trackingService.listenToSelectedRoute(code, async (route) => {
+      if (route && typeof route === 'object' && route.polyline) {
+        // Draw just the encoded polyline string on the map for members
+        if (this.mapComponent) {
+          await this.mapComponent.drawPolyline(route.polyline);
         }
-        this.getGroupMembers(members);
+
+        // Switch to tracking mode and hide the main card
+        this.currentView.set('tracking');
+        this.displayMainCard.set(false);
+
+        // Store minimal local representation for UI
+        this.routes = [{ polyline: route.polyline, summary: route.summary || '', timestamp: route.timestamp || Date.now() }];
+        this.selectedRouteIndex = 0;
+      }
     });
   }
 
   endGroupListener() {
     if (this.unsubscribeFromGroup) {
-      this.unsubscribeFromGroup(); // stop updates!
+      this.unsubscribeFromGroup(); // stop member updates!
       this.unsubscribeFromGroup = undefined;
-      }
+    }
+    if (this.unsubscribeSelectedRoute) {
+      this.unsubscribeSelectedRoute(); // stop selected-route updates!
+      this.unsubscribeSelectedRoute = undefined;
+    }
   }
 
   // Card routes (what user can see)
@@ -301,19 +328,42 @@ export class UserhomePage implements OnInit {
   private readonly REROUTE_THRESHOLD = 0.8; //change to .1 for demo 
 
   async confirm() {
+    // Ensure routes have been fetched and a route is selected
+    if (!this.routes || this.routes.length === 0) {
+      await this.fetchRoutes();
+    }
 
+    if (!this.routes || this.routes.length === 0) return;
+
+    if (this.selectedRouteIndex === null) this.selectedRouteIndex = 0;
+
+    const selected = this.routes[this.selectedRouteIndex];
+
+    // Prepare a lightweight object to send to Firebase to avoid large payloads
+    const lite = {
+      polyline: selected.polyline,
+      summary: selected.summary || '',
+      timestamp: Date.now()
+    };
+
+    // If in a group, publish the lite selected route so members will display it
+    const code = this.groupService.groupCode();
+    if (code) {
+      await this.trackingService.setSelectedRoute(code, lite);
+    }
+
+    // Host should still use the full object locally for display
+    if (this.mapComponent) {
+      await this.mapComponent.displayRoute(selected);
+    }
+
+    // Move into tracking view
     this.currentView.set('tracking');
     this.displayMainCard.set(false);
-
-    // Calls Server for routes
-    await this.fetchAndDrawRoute();
-
-    // Route progress and off-route detection come from MapDisplayComponent
-
   }
 
-  async fetchAndDrawRoute() {
-    // Update the timestamp so we track the call
+  // Fetch routes from the server without changing the current view (used for Preview)
+  async fetchRoutes() {
     this.lastApiCallTime = Date.now();
 
     const position = this.locationService.currentPosition();
@@ -329,6 +379,7 @@ export class UserhomePage implements OnInit {
         "weather_weight": this.weatherToggled ? 2.0 : 1.0
       }
     };
+
     try {
       const response = await fetch('http://10.0.2.2:8000/analyze-route', {
         method: 'POST',
@@ -336,13 +387,26 @@ export class UserhomePage implements OnInit {
         body: JSON.stringify(body)
       });
       const data = await response.json();
-      await this.mapComponent.displayRoutes(data);
+      this.routes = data;
+
+      if (this.mapComponent) {
+        await this.mapComponent.displayRoutes(this.routes);
+        if (this.routes.length > 0) {
+          this.selectedRouteIndex = 0;
+          await this.mapComponent.displayRoute(this.routes[0]);
+        }
+      }
 
       // Reset last API call time so we don't immediately reroute after a fresh route
       this.lastApiCallTime = Date.now();
     } catch (err) {
       console.error('Backend connection failed.', err);
     }
+  }
+
+  // Backwards compatible - still used by some places to fetch + show routes and enter tracking
+  async fetchAndDrawRoute() {
+    await this.fetchRoutes();
   }
 
   // Called from template when MapDisplayComponent emits distance updates
@@ -358,6 +422,27 @@ export class UserhomePage implements OnInit {
         console.log('Off route, but waiting for API cooldown...');
       }
     }
+  }
+
+  // Select a particular route (index) and show it on the map
+  async selectRoute(index: number) {
+    if (!this.routes || index < 0 || index >= this.routes.length) return;
+    this.selectedRouteIndex = index;
+    await this.mapComponent.displayRoute(this.routes[index]);
+  }
+
+  // Cycle previous
+  async prevRoute() {
+    if (!this.routes || this.routes.length === 0) return;
+    const newIndex = this.selectedRouteIndex === null ? 0 : (this.selectedRouteIndex - 1 + this.routes.length) % this.routes.length;
+    await this.selectRoute(newIndex);
+  }
+
+  // Cycle next
+  async nextRoute() {
+    if (!this.routes || this.routes.length === 0) return;
+    const newIndex = this.selectedRouteIndex === null ? 0 : (this.selectedRouteIndex + 1) % this.routes.length;
+    await this.selectRoute(newIndex);
   }
 
   endOptions(){this.currentView.set('end');}

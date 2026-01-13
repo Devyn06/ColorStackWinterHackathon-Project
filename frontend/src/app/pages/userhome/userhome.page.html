@@ -23,7 +23,7 @@
       <div class="pin-warning">
         <ion-icon name="warning-outline" color="warning"></ion-icon>
         <ion-label color="danger" style="font-weight: bold;">
-          Please drop a pin on the map
+          Please drop a pin on the map and scroll through filters for route
         </ion-label>
       </div>
     }
@@ -195,46 +195,86 @@
       }
       <!-- Route filter/confirm ride screen -->
       @if (currentView() == 'start'){
-        <ion-card-header>
-          <ion-toolbar color="transparent">
-            <ion-buttons slot="start">
-              <ion-button (click)="goBackHost()">
-                <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
-              </ion-button>
-            </ion-buttons>
-            <ion-card-title>Route Preferences</ion-card-title>
-          </ion-toolbar>
-        </ion-card-header>
-        <ion-grid>
-          <br>
-          <ion-row>
-            <ion-col class="ion-text-left">
-              <ion-toggle [(ngModel)]="curveToggled">Less Curves:</ion-toggle>
-            </ion-col>
-            <ion-col class="ion-text-right">
-              <ion-toggle [(ngModel)]="speedToggled"> Slower Speeds: </ion-toggle>
-            </ion-col>
-          </ion-row>
-          <ion-row>
-            <ion-col class="ion-text-left">
-              <ion-toggle [(ngModel)]="weatherToggled"> Check Weather:</ion-toggle>
-            </ion-col>
-            <ion-col class="ion-text-right">
-              <ion-toggle [(ngModel)]="lightToggled">Less Lights:</ion-toggle>
-            </ion-col>
-          </ion-row>
-          <ion-row>
-          </ion-row>
-          <ion-row>
+        
+        <ion-card>
           
-          </ion-row>
-          <br>
-          <ion-row>
-            <ion-col class="ion-text-center">
-              <ion-button [disabled]="pinCheck()" id="startButton" (click)="confirm()">Confirm Ride</ion-button>
-            </ion-col>
-          </ion-row>
-        </ion-grid>
+          <ion-card-header>
+            <ion-toolbar color="transparent">
+              <ion-buttons slot="start">
+                <ion-button (click)="goBackHost()">
+                  <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+                </ion-button>
+              </ion-buttons>
+              <ion-card-title>Route Preferences</ion-card-title>
+            </ion-toolbar>
+          </ion-card-header>
+
+          <ion-card-content style="max-height: 80vh; overflow-y: auto;">
+            <br><br><br><br><br><br><br><br><br><br><br>
+            <ion-list lines="full">
+              <ion-item>
+                <ion-label>Less Curves</ion-label>
+                <ion-toggle slot="end" [(ngModel)]="curveToggled"></ion-toggle>
+              </ion-item>
+              
+              <ion-item>
+                <ion-label>Slower Speeds</ion-label>
+                <ion-toggle slot="end" [(ngModel)]="speedToggled"></ion-toggle>
+              </ion-item>
+
+              <ion-item>
+                <ion-label>Check Weather</ion-label>
+                <ion-toggle slot="end" [(ngModel)]="weatherToggled"></ion-toggle>
+              </ion-item>
+
+              <ion-item>
+                <ion-label>Less Lights</ion-label>
+                <ion-toggle slot="end" [(ngModel)]="lightToggled"></ion-toggle>
+              </ion-item>
+            </ion-list>
+
+            <br>
+
+            <ion-grid>
+              
+              <ion-row class="ion-align-items-center ion-justify-content-center">
+                <ion-col size="3">
+                  <ion-button fill="outline" size="small" expand="block" (click)="prevRoute()" [disabled]="!routes || routes.length === 0">
+                    <ion-icon name="chevron-back-outline"></ion-icon>
+                    Prev Route
+                  </ion-button>
+                </ion-col>
+                
+                <ion-col size="6" class="ion-text-center">
+                  <small>Route {{ selectedRouteIndex !== null ? (selectedRouteIndex + 1) : '-' }} / {{ routes.length }}</small>
+                </ion-col>
+
+                <ion-col size="3">
+                  <ion-button fill="outline" size="small" expand="block" (click)="nextRoute()" [disabled]="!routes || routes.length === 0">
+                    <ion-icon name="chevron-forward-outline"></ion-icon>
+                    Next Route
+                  </ion-button>
+                </ion-col>
+              </ion-row>
+
+              <br>
+
+              <ion-row>
+                <ion-col size="6">
+                  <ion-button expand="block" fill="outline" (click)="fetchRoutes()" [disabled]="!lastPin">
+                    Preview
+                  </ion-button>
+                </ion-col>
+                <ion-col size="6">
+                  <ion-button expand="block" (click)="confirm()" [disabled]="pinCheck()" id="startButton">
+                    Confirm
+                  </ion-button>
+                </ion-col>
+              </ion-row>
+
+            </ion-grid>
+          </ion-card-content>
+        </ion-card>
       }
     </ion-card>
   }

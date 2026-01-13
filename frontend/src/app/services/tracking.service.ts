@@ -151,6 +151,33 @@ export class TrackingService {
     return null;
   }
 
+  // Set the selected route for the group. Any member can listen to this path to get the chosen route
+  async setSelectedRoute(groupId: string | null, route: any) {
+    try {
+      if (!groupId) throw new Error('Group ID unavailable');
+      const routeRef = ref(this.db, `groups/${groupId}/selectedRoute`);
+      await set(routeRef, route);
+      console.log('Selected route set for group', groupId);
+    } catch (e) {
+      console.error('Firebase error setting selected route: ', e);
+    }
+  }
+
+  // Listen for a selected route for a group; returns the unsubscribe function
+  listenToSelectedRoute(groupId: string, callback: (route: any) => void) {
+    const selRef = ref(this.db, `groups/${groupId}/selectedRoute`);
+
+    const unsubscribe = onValue(selRef, (snapshot: DataSnapshot) => {
+      if (snapshot.exists()) {
+        callback(snapshot.val());
+      } else {
+        callback(null);
+      }
+    });
+
+    return unsubscribe;
+  }
+
   // Listens to group members to check for changes in location
   listenToGroup(groupId: string, callback: (members: any) => void) {
     const membersRef = ref(this.db, `groups/${groupId}/members`);
