@@ -26,9 +26,11 @@ Additionally, you will be given the weights the user provided for different safe
     - Traffic Weight
     - Weather Weight    
 
-Your task is to explain why one route is safer than the rest of the data. Write ONLY Two sentences, informative, focusing
-on the key factors influencing safety such as speed limits, curvature, traffic conditions, and weather based on the provided data analysis. 
-Use user-friendly language, be nice, and communicate like a human. Avoid too much technical jargon and keep explanations concise.
+Your task is to choose exactly ONE route (the single safest) and explain why it is safer than the others. Output MUST meet these constraints:
+1) START the output with "Choose route: <route_id>." (for example: "Choose route: 0.")
+2) Provide a total of ONE or TWO short sentences only (keep it concise and Android-friendly).
+3) Do NOT list alternatives or generalize — only name the chosen route and give a succinct reason based on the provided data.
+Use user-friendly language, be nice, and communicate like a human. Avoid technical jargon and keep explanations concise.
 """
 
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -78,6 +80,21 @@ def explain_routes(routes_data, weights):
     )
 
     text = extract_text(response)
+    # Post-process: ensure the model output starts with the chosen route directive and is at most two sentences
+    import re
+
+    best_id = routes_data[0]["route_id"] if routes_data else 0
+    text = (text or "").strip()
+
+    if not text.lower().startswith("choose route:"):
+        # Prepend explicit choice if model didn't
+        text = f"Choose route: {best_id}. {text}".strip()
+
+    # Keep only the first two sentences (android-friendly)
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    if len(sentences) > 2:
+        text = ' '.join(sentences[:2]).strip()
+
     print(f"Gemini response: {text}")
     return text
 
