@@ -67,11 +67,15 @@ pip install -r requirements.txt
 5.1 **Add google-services.json**: Download this file in Firebase Console in project settings, copy file to app folder in Android Studio, then go back to Github
  fill in .env with firebase keys example in .env.example
 
- # Team members & contributions
- Isiah - backened algorithm
- Devyn - frontend + firebase synchronization, real time UI sync updates
- Leo - backend + firebase synchronization, users joined group and location was updated live
- Erick - Front end + FE and BE connection, live rerouting, live trim polyline.
+ ## Team members & contributions
+ #Isiah
+ Backend routing algorithm
+ #Devyn
+ Frontend + User authentication + real time UI sync updates
+ #Leo
+ Group location sharing + firebase integration + pitch/demo slides/format
+ #Erick 
+ Interactive UI design (signals) + FE and BE connection, live rerouting, live trim polyline, Location services.
 
  # Demo video link
  https://youtu.be/bplrNkmVgw0
