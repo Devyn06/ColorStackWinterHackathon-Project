@@ -26,7 +26,7 @@ Additionally, you will be given the weights the user provided for different safe
     - Traffic Weight
     - Weather Weight    
 
-Your task is to explain why one route is safer than another based on the above data. Be brief but informative, focusing
+Your task is to explain why one route is safer than the rest of the data. Write ONLY Two sentences, informative, focusing
 on the key factors influencing safety such as speed limits, curvature, traffic conditions, and weather based on the provided data analysis. 
 Use user-friendly language, be nice, and communicate like a human. Avoid too much technical jargon and keep explanations concise.
 """

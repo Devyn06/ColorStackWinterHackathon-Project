@@ -2,7 +2,7 @@ import { Component, OnInit, signal,model,ViewChild,inject,Renderer2, ElementRef 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonCardContent,IonRow,IonCol,IonButton,IonIcon,IonCard,
-  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,IonButtons,IonToolbar,IonToggle,IonList,IonLabel,IonItem,IonFooter} from '@ionic/angular/standalone';
+  IonCardTitle,IonCardHeader,IonGrid,IonSpinner,IonRange,IonInput,IonButtons,IonToolbar,ToastController,IonToggle,IonList,IonLabel,IonItem,IonFooter} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { addCircleOutline, peopleOutline, arrowBack,warningOutline} from 'ionicons/icons';
 
@@ -82,6 +82,9 @@ export class UserhomePage implements OnInit {
   routes: any[] = [];
   selectedRouteIndex: number | null = null;
 
+  // AI prompt (optional) returned from backend for display in a toast
+  aiPrompt: string | null = null;
+
   //receieves signal from map component
   onMapReady(isReady:boolean){
     this.mapReady.set(isReady);
@@ -93,7 +96,8 @@ export class UserhomePage implements OnInit {
     private trackingService: TrackingService,
     private authService: AuthService,
     private el: ElementRef,
-    private renderer: Renderer2) {
+    private renderer: Renderer2,
+    private toastController: ToastController) {
     addIcons({ addCircleOutline, peopleOutline,arrowBack,warningOutline});
   }
 
@@ -369,6 +373,21 @@ export class UserhomePage implements OnInit {
       await this.mapComponent.displayRoute(selected);
     }
 
+    // If the backend provided an AI prompt, show it in a toast for 10 seconds
+    if (this.aiPrompt) {
+      try {
+        const toast = await this.toastController.create({
+          message: this.aiPrompt,
+          duration: 10000,
+          position: 'bottom',
+          color: 'primary'
+        });
+        await toast.present();
+      } catch (err) {
+        console.warn('Failed to show AI prompt toast:', err);
+      }
+    }
+
     // Move into tracking view
     this.currentView.set('tracking');
     this.displayMainCard.set(false);
@@ -399,7 +418,24 @@ export class UserhomePage implements OnInit {
         body: JSON.stringify(body)
       });
       const data = await response.json();
-      this.routes = data;
+
+      // Support both array responses and an object { routes, explanation }
+      if (Array.isArray(data)) {
+        this.routes = data;
+        // Try to synthesize a short AI prompt from route reasons if present
+        if (data[0] && data[0].reasons) {
+          this.aiPrompt = (data[0].reasons || []).slice(0,3).join('; ');
+        } else {
+          this.aiPrompt = null;
+        }
+      } else if (data && typeof data === 'object') {
+        // API might return { routes: [...], explanation: '...' }
+        this.routes = Array.isArray((data as any).routes) ? (data as any).routes : [];
+        this.aiPrompt = (data as any).explanation || (data as any).prompt || null;
+      } else {
+        this.routes = [];
+        this.aiPrompt = null;
+      }
 
       if (this.mapComponent) {
         await this.mapComponent.displayRoutes(this.routes);
@@ -506,7 +542,24 @@ export class UserhomePage implements OnInit {
       this.groupMembers.set(memberList);
     }
     else{
-      this.leaveRoom();
+      // Host ended the session — send members back to selection card and clear group state
+      try {
+        if (this.mapComponent) {
+          await this.mapComponent.clearAllFriendMarkers();
+          await this.mapComponent.clearMap();
+        }
+      } catch (err) {
+        console.warn('Failed to clear map after host ended session:', err);
+      }
+
+      // Clear group state locally
+      this.groupService.groupCode.set(null);
+      this.groupCode = '';
+      this.endGroupListener();
+      this.displayMainCard.set(true);
+      this.currentView.set('selection');
+      document.documentElement.style.setProperty('--height', '200px');
+
       alert("Room Closed.");
     }
   }
