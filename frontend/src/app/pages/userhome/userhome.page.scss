@@ -85,7 +85,6 @@ ion-spinner {
     ion-card-content {
       display: flex;
       flex-direction: column;
-      justify-content: center; // Vertically center the grid
       height: 160px;
       padding: 16px;
 
@@ -102,7 +101,7 @@ ion-spinner {
   font-size: 2.5rem;
   font-weight: bold;
   letter-spacing: 0.3em;
-  padding-top: 40px;
+  padding-top: 20px;
   margin: 0;
   color: var(--ion-color-primary);
 }

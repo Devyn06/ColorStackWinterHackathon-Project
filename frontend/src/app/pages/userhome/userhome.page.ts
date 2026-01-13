@@ -61,6 +61,7 @@ export class UserhomePage implements OnInit {
   displayMainCard = signal(true);
   
   groupCode = '';
+  gameStarted = signal(false);
 
   // holds data for unsubscribeFromGroup method
   private unsubscribeFromGroup?: () => void;
@@ -208,6 +209,8 @@ export class UserhomePage implements OnInit {
     this.userJoinCode.set('');
     this.currentView.set("waitroom");
     document.documentElement.style.setProperty('--height', '600px');
+    this.listenForGameStart();
+
   }
 
   startGroupListener() {
@@ -229,6 +232,12 @@ export class UserhomePage implements OnInit {
       this.unsubscribeFromGroup(); // stop updates!
       this.unsubscribeFromGroup = undefined;
       }
+
+
+  if (this.unsubscribeFromJoinable) {
+    this.unsubscribeFromJoinable();
+    this.unsubscribeFromJoinable = undefined;
+  }
   }
 
   // Card routes (what user can see)
@@ -293,6 +302,11 @@ export class UserhomePage implements OnInit {
     // Change set screen
     this.currentView.set('start');
     this.displayMainCard.set(true);
+    this.gameStarted.set(true);
+    document.documentElement.style.setProperty('--height', '200px');
+
+    this.listenForGameStart();
+
   }
 
   // Only used to MANAGE API CALLS remove for demo for smoother updates (reroute only)
@@ -383,26 +397,23 @@ export class UserhomePage implements OnInit {
     this.groupService.groupCode.set(null);
     this.groupCode ='';
     document.documentElement.style.setProperty('--height', '200px');
+    this.gameStarted.set(false);
   }
 
   private db = inject(Database);
 
   async getGroupMembers(members: any) {
-    
-
     const membersInSync = Object.keys(members);
     console.log('members keys received:', membersInSync);
     const dbRef = ref(this.db);
     const memberList: string[] = [];
-
   
-  const snapshot = await get(child(dbRef, `groups/${this.groupCode}/host`));
-  //Check if host is still in room an if not kicks user
+    const snapshot = await get(child(dbRef, `groups/${this.groupCode}/host`));
+    //Check if host is still in room an if not kicks user
     if (snapshot.exists()) {
       //Finds names of all users in room
       for(const Id of membersInSync){
         const snapshot = await get(child(dbRef, `userDB/${Id}`));
-
         if (snapshot.exists()) {
           const member = snapshot.val();
           memberList.push(member.firstName + ' ' + member.lastName);
@@ -416,5 +427,26 @@ export class UserhomePage implements OnInit {
       alert("Room Closed.");
     }
   }
+
+  private unsubscribeFromJoinable?: () => void;
+
+listenForGameStart() {
+  const joinableRef = ref(this.db, `groups/${this.groupCode}/joinable`);
+
+  this.unsubscribeFromJoinable = onValue(joinableRef, snapshot => {
+    if (!snapshot.exists()) return;
+
+    const joinable = snapshot.val();
+
+    if (!this.gameStarted() && (joinable === false || joinable === 'false')) {
+      this.currentView.set('tracking');
+      this.displayMainCard.set(false);
+      //this.confirm();
+      this.gameStarted.set(true);
+      console.log('Game started for member');
+    }
+  });
+}
+
       
 }
